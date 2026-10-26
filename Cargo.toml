@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "src-tauri",
+    "crates/lumen-core",
+    "crates/lumen-playback",
+    "crates/lumen-library",
+    "crates/lumen-platform",
+]
+resolver = "2"

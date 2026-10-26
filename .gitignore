@@ -1,0 +1,85 @@
+# ==============================================================================
+# Lumen v2 - Git Ignore
+# ==============================================================================
+
+# --- Rust & Cargo ---
+/target/
+**/target/
+**/*.rs.bk
+*.pdb
+
+# --- Node & Frontend ---
+/frontend/node_modules/
+/frontend/dist/
+/frontend/dist-ssr/
+frontend/.npm
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Tauri Generated Schemas & Cache ---
+/src-tauri/gen/schemas/
+
+# --- Native Binaries & Large Dynamic Libraries (>100MB GitHub limit) ---
+*.dll
+*.exe
+*.so
+*.dylib
+*.lib
+*.exp
+*.ilk
+libmpv-2.dll
+
+# Preserve headers and packaging definitions, but exclude binary blobs
+packaging/windows/libmpv/*.dll
+packaging/windows/libmpv/*.a
+
+# --- Generated Screenshots & Runtime Databases ---
+screenshot_*.png
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+library.db
+
+# --- Media Samples (Optional: exclude large binary media files) ---
+test_media/*.mp4
+test_media/*.mkv
+test_media/*.flac
+test_media/*.avi
+test_media/*.mov
+
+# --- IDEs & Code Editors ---
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# --- OS Specific ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# --- Environment Variables & Local Secrets ---
+.env
+.env.local
+.env.*.local

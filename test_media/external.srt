@@ -1,0 +1,7 @@
+1
+00:00:00,500 --> 00:00:02,500
+Lumen v2 SRT Subtitle Test
+
+2
+00:00:02,800 --> 00:00:04,800
+Second subtitle line with libmpv rendering
