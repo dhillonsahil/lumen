@@ -247,11 +247,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     // Helper to update body and html classes for native video transparency
     const updateBodyClass = (status: PlaybackStatus) => {
       const hasMedia =
-        status.state === 'playing' ||
-        status.state === 'paused' ||
-        status.state === 'loading' ||
-        status.duration > 0 ||
-        !!status.path;
+        Boolean(status.path) &&
+        status.state !== 'idle' &&
+        status.state !== 'stopped' &&
+        status.state !== 'ended';
       if (hasMedia) {
         document.documentElement.classList.add('media-loaded');
         document.body.classList.add('media-loaded');
@@ -300,9 +299,25 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     });
 
     await listen('playback:ended', () => {
-      const { status, playlist } = get();
-      if (status.state === 'playing' && playlist.items.length > 0) {
+      const { playlist } = get();
+      if (
+        playlist.items.length > 0 &&
+        playlist.current_index !== null &&
+        playlist.current_index + 1 < playlist.items.length
+      ) {
         get().nextTrack();
+      } else {
+        set((state) => ({
+          status: {
+            ...state.status,
+            state: 'idle',
+            path: null,
+            title: null,
+            position: 0,
+            duration: 0,
+          },
+        }));
+        updateBodyClass(get().status);
       }
     });
 

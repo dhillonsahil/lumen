@@ -72,26 +72,27 @@ export const TitleBar: React.FC = () => {
       {/* Left: Branding & Current File */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div
+          <img
+            src="/icon.svg"
+            alt="Lumen"
             style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              background: 'var(--accent-gradient)',
-              boxShadow: 'var(--accent-glow)',
+              width: '20px',
+              height: '20px',
+              filter: 'drop-shadow(0 0 6px rgba(99, 102, 241, 0.6))',
             }}
           />
           <span
             style={{
               fontWeight: 800,
-              fontSize: '15px',
-              letterSpacing: '-0.5px',
+              fontSize: '13px',
+              letterSpacing: '-0.3px',
               background: 'var(--accent-gradient)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
+              whiteSpace: 'nowrap',
             }}
           >
-            LUMEN
+            LUMEN MEDIA PLAYER
           </span>
         </div>
 

@@ -139,10 +139,16 @@ impl MpvEventLoop {
                                 // EOF reached normally
                                 if let Ok(mut st) = status_lock.write() {
                                     st.state = PlaybackState::Ended;
+                                    st.path = None;
+                                    st.title = None;
+                                    st.position = 0.0;
+                                    st.duration = 0.0;
                                 }
                                 if tx.blocking_send(LumenPlaybackEvent::Ended).is_err() {
                                     break;
                                 }
+                                let current_status = backend.get_status_sync();
+                                let _ = tx.blocking_send(LumenPlaybackEvent::StateChanged(current_status));
                             } else if end_data.reason == 2 {
                                 // Explicit stop requested or playlist track transitioned
                                 let is_idle = mpv.get_property_flag("idle").unwrap_or(true);
@@ -172,6 +178,8 @@ impl MpvEventLoop {
                                 error!("mpv end-file playback error: {}", err_msg);
                                 if let Ok(mut st) = status_lock.write() {
                                     st.state = PlaybackState::Error;
+                                    st.path = None;
+                                    st.title = None;
                                     st.error_message = Some(err_msg.clone());
                                 }
                                 let current_status = backend.get_status_sync();
@@ -202,8 +210,12 @@ impl MpvEventLoop {
                                     if prop.format == MpvFormat::Flag && !prop.data.is_null() {
                                         let paused = unsafe { *(prop.data as *const i32) != 0 };
                                         if let Ok(mut st) = status_lock.write() {
-                                            if st.state != PlaybackState::Loading
+                                            // Only update playback state from pause property if a file is actually loaded
+                                            if st.path.is_some()
+                                                && st.state != PlaybackState::Loading
                                                 && st.state != PlaybackState::Ended
+                                                && st.state != PlaybackState::Stopped
+                                                && st.state != PlaybackState::Idle
                                             {
                                                 st.state = if paused {
                                                     PlaybackState::Paused

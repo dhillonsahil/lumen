@@ -524,3 +524,103 @@ pub async fn open_external_url(url: String) -> Result<(), LumenError> {
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn open_default_apps_settings() -> Result<(), LumenError> {
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("cmd")
+            .args(["/c", "start", "ms-settings:defaultapps"])
+            .spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-settings")
+            .args(["check", "default-web-browser"])
+            .spawn();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open")
+            .arg("/System/Library/PreferencePanes/General.prefPane")
+            .spawn();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn register_file_associations() -> Result<bool, LumenError> {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(exe_path) = std::env::current_exe() {
+            let exe_str = exe_path.to_string_lossy().to_string();
+            let app_name = "Lumen Media Player";
+            let cmd_str = format!("\"{}\" \"%1\"", exe_str);
+
+            // Register application open command
+            let app_key = r"Software\Classes\Applications\lumen-app.exe\shell\open\command";
+            let _ = std::process::Command::new("reg")
+                .args(["add", &format!(r"HKCU\{}", app_key), "/ve", "/d", &cmd_str, "/f"])
+                .output();
+
+            let supported_types = [
+                ".mp4", ".mkv", ".avi", ".mov", ".webm", ".flv", ".wmv",
+                ".m4v", ".ts", ".m2ts", ".mp3", ".flac", ".wav", ".aac", ".ogg"
+            ];
+
+            for ext in supported_types {
+                let _ = std::process::Command::new("reg")
+                    .args([
+                        "add",
+                        r"HKCU\Software\Classes\Applications\lumen-app.exe\SupportedTypes",
+                        "/v",
+                        ext,
+                        "/t",
+                        "REG_SZ",
+                        "/d",
+                        "",
+                        "/f",
+                    ])
+                    .output();
+
+                let _ = std::process::Command::new("reg")
+                    .args([
+                        "add",
+                        &format!(r"HKCU\Software\Classes\{}\OpenWithProgids", ext),
+                        "/v",
+                        "Lumen.MediaFile",
+                        "/t",
+                        "REG_NONE",
+                        "/f",
+                    ])
+                    .output();
+            }
+
+            // Register ProgID
+            let _ = std::process::Command::new("reg")
+                .args([
+                    "add",
+                    r"HKCU\Software\Classes\Lumen.MediaFile",
+                    "/ve",
+                    "/d",
+                    app_name,
+                    "/f",
+                ])
+                .output();
+
+            let _ = std::process::Command::new("reg")
+                .args([
+                    "add",
+                    r"HKCU\Software\Classes\Lumen.MediaFile\shell\open\command",
+                    "/ve",
+                    "/d",
+                    &cmd_str,
+                    "/f",
+                ])
+                .output();
+
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}

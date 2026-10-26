@@ -9,6 +9,8 @@
 *.pdb
 
 # --- Node & Frontend ---
+/dist/
+*.zip
 /frontend/node_modules/
 /frontend/dist/
 /frontend/dist-ssr/

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lumen",
+  "productName": "Lumen Media Player",
   "version": "2.0.0",
   "identifier": "com.lumen.player",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Lumen v2",
+        "title": "Lumen Media Player",
         "width": 1280,
         "height": 720,
         "minWidth": 640,
@@ -37,6 +37,13 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": ["mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v", "ts", "m2ts", "mp3", "flac", "wav", "aac", "ogg", "m4a", "opus"],
+        "name": "Lumen Media File",
+        "role": "Viewer"
+      }
     ]
   }
 }

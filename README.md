@@ -1,10 +1,10 @@
-# Lumen v2
+# Lumen Media Player
 
 <div align="center">
 
-![Lumen Logo](https://raw.githubusercontent.com/dhillonsahil/lumen/main/frontend/public/icon.png)
+<img src="frontend/public/icon.svg" width="128" height="128" alt="Lumen Media Player Icon" />
 
-### The Production-Grade Native Desktop Media Player Built with Rust, Tauri v2, and libmpv
+### The High-Performance Native Desktop Media Player Built with Rust, Tauri v2, and libmpv
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust: 1.78+](https://img.shields.io/badge/Rust-1.78%2B-orange.svg?logo=rust)](https://www.rust-lang.org)
@@ -20,19 +20,19 @@
 
 ## 📖 Overview
 
-**Lumen v2** is a modern, blazing-fast desktop media player built for power users. Unlike traditional desktop wrappers that attempt to demux or render media inside Chromium or HTML5 `<video>`, Lumen uses **native `libmpv`** as its sole playback engine, combined with hardware Direct3D11 rendering directly attached to the OS window handle (`HWND` / `X11 wid`).
+**Lumen Media Player** is a modern, blazing-fast desktop media player built for power users. Unlike traditional desktop wrappers that attempt to demux or render media inside Chromium or HTML5 `<video>`, Lumen uses **native `libmpv`** as its sole playback engine, combined with hardware Direct3D11 rendering directly attached to the OS window handle (`HWND` / `X11 wid`).
 
 The React 18 + TypeScript frontend acts strictly as a high-performance **glassmorphic control surface** that floats above the native video surface.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Lumen v2 Desktop App                     │
+│                 Lumen Media Player Desktop App              │
 ├─────────────────────────────────────────────────────────────┤
 │  React 18 Control Surface (Vite + Vanilla CSS Glassmorphism) │
-│    ├── TitleBar (Media Info, Diagnostics, Screenshots, Sponsor)
+│    ├── TitleBar (Branding, Diagnostics, Screenshots, Heart) │
 │    ├── TransportBar (Scrubber, 0-200% Vol Boost, A-B Loop) │
 │    ├── MiniPlayerOverlay (Compact PiP with native hover)    │
-│    └── Modals (Equalizer, Video Adjustments, Tracks, Queue) │
+│    └── Unified Settings (General, Video/Color, EQ, Diag)   │
 ├──────────────────────────┬──────────────────────────────────┤
 │    Tauri v2 IPC Bridge   │  MpvEventLoop (Std Thread)       │
 │    Async Typed Commands  │  Blocking IPC Event Dispatcher   │
@@ -198,7 +198,8 @@ Installers will be generated in `src-tauri/target/release/bundle/nsis/` and `msi
 | <kbd>F</kbd> | Toggle Fullscreen mode |
 | <kbd>P</kbd> | Toggle Mini-Player (PiP mode) |
 | <kbd>L</kbd> | Cycle A-B Repeat Loop (Point A → Point B → Clear) |
-| <kbd>A</kbd> / <kbd>S</kbd> | Audio & Subtitle track selector |
+| <kbd>A</kbd> | Cycle Aspect Ratio (Auto → 16:9 → 4:3 → 21:9 → 1:1) |
+| <kbd>T</kbd> | Audio & Subtitle Track Selector |
 | <kbd>Q</kbd> | Toggle Playlist Queue Drawer |
 | <kbd>Ctrl</kbd> + <kbd>B</kbd> | Toggle Media Library & History Drawer |
 | <kbd>Ctrl</kbd> + <kbd>O</kbd> | Open Media File(s) |

@@ -43,6 +43,7 @@ export const PlaylistDrawer: React.FC = () => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const justDraggedRef = React.useRef(false);
 
   if (activeDrawer !== 'playlist') return null;
 
@@ -60,13 +61,17 @@ export const PlaylistDrawer: React.FC = () => {
   const visibleItems = filteredItems.slice(0, 300);
 
   const handleItemDragStart = (e: React.DragEvent, index: number) => {
+    e.stopPropagation();
+    justDraggedRef.current = true;
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/x-lumen-item', index.toString());
     e.dataTransfer.setData('text/plain', index.toString());
   };
 
   const handleItemDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
     if (dragOverIndex !== index) {
       setDragOverIndex(index);
@@ -76,16 +81,27 @@ export const PlaylistDrawer: React.FC = () => {
   const handleItemDrop = async (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
-    if (draggedIndex !== null && draggedIndex !== targetIndex) {
-      await reorderPlaylistItem(draggedIndex, targetIndex);
+    const fromStr =
+      e.dataTransfer.getData('application/x-lumen-item') ||
+      e.dataTransfer.getData('text/plain');
+    const from = fromStr !== '' ? parseInt(fromStr, 10) : draggedIndex;
+    if (from !== null && !isNaN(from) && from !== targetIndex) {
+      await reorderPlaylistItem(from, targetIndex);
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 150);
   };
 
-  const handleItemDragEnd = () => {
+  const handleItemDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 150);
   };
 
   const handleAddFiles = async () => {
@@ -368,7 +384,11 @@ export const PlaylistDrawer: React.FC = () => {
                     background: isCurrent ? 'rgba(99, 102, 241, 0.22)' : undefined,
                     transition: 'opacity 0.15s ease, border-color 0.15s ease',
                   }}
-                  onClick={() => playPlaylistItem(originalIndex)}
+                  onClick={() => {
+                    if (!justDraggedRef.current) {
+                      playPlaylistItem(originalIndex);
+                    }
+                  }}
                 >
                   <div
                     style={{

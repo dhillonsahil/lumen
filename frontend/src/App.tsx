@@ -68,9 +68,10 @@ export const App: React.FC = () => {
   const hudTimerRef = useRef<number | null>(null);
 
   const hasMedia =
-    status.state === 'playing' ||
-    status.state === 'paused' ||
-    (Boolean(status.path) && status.state !== 'idle' && status.state !== 'stopped');
+    Boolean(status.path) &&
+    status.state !== 'idle' &&
+    status.state !== 'stopped' &&
+    status.state !== 'ended';
 
   // Synchronize documentElement & body class whenever hasMedia changes
   useEffect(() => {
@@ -178,18 +179,29 @@ export const App: React.FC = () => {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(true);
+    if (e.dataTransfer.types.includes('application/x-lumen-item')) {
+      return;
+    }
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingOver(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingOver(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/x-lumen-item')) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingOver(false);
@@ -330,21 +342,17 @@ export const App: React.FC = () => {
             }}
           >
             {/* Logo Badge */}
-            <div
+            <img
+              src="/icon.svg"
+              alt="Lumen Media Player"
               style={{
                 width: '64px',
                 height: '64px',
-                borderRadius: '18px',
-                background: 'var(--accent-gradient)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 'var(--accent-glow)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(99, 102, 241, 0.45)',
                 marginBottom: '18px',
               }}
-            >
-              <Film size={32} color="#fff" />
-            </div>
+            />
 
             <h1
               style={{
@@ -352,9 +360,12 @@ export const App: React.FC = () => {
                 fontWeight: 800,
                 letterSpacing: '-0.5px',
                 marginBottom: '8px',
+                background: 'var(--accent-gradient)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
               }}
             >
-              Lumen v2
+              Lumen Media Player
             </h1>
 
             <p

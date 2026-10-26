@@ -20,7 +20,10 @@ import {
   FlipVertical,
   CheckCircle,
   RefreshCw,
+  Film,
+  Check,
 } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 import { usePlayerStore } from '../stores/playerStore';
 import { AppSettings } from '../types';
 import { pickFolder } from '../utils/filePicker';
@@ -397,6 +400,71 @@ export const SettingsModal: React.FC = () => {
                 />
                 <span>Auto-load external subtitles with matching file name</span>
               </label>
+            </div>
+
+            {/* Default Media Player & File Associations */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                borderTop: '1px solid var(--glass-border-subtle)',
+                paddingTop: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Film size={15} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                  Default Player & File Associations
+                </span>
+              </div>
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.4',
+                  margin: 0,
+                }}
+              >
+                Set Lumen Media Player as your system default application for media playback, or register file associations for the Windows "Open with" context menu.
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '10px',
+                  flexWrap: 'wrap',
+                  marginTop: '4px',
+                }}
+              >
+                <button
+                  type="button"
+                  className="glass-btn glass-btn-primary"
+                  style={{ fontSize: '12px', padding: '7px 14px', gap: '6px' }}
+                  onClick={async () => {
+                    await invoke('register_file_associations');
+                    await invoke('open_default_apps_settings');
+                  }}
+                >
+                  <Film size={14} />
+                  <span>Set as Default Video Player</span>
+                </button>
+                <button
+                  type="button"
+                  className="glass-btn"
+                  style={{ fontSize: '12px', padding: '7px 14px', gap: '6px' }}
+                  onClick={async () => {
+                    const ok = await invoke<boolean>('register_file_associations');
+                    if (ok) {
+                      alert(
+                        'File associations registered successfully! Lumen Media Player is now available in Windows "Open with" for MP4, MKV, AVI, MOV, WEBM, and other formats.'
+                      );
+                    }
+                  }}
+                >
+                  <Check size={14} />
+                  <span>Register "Open with" Associations</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
