@@ -29,3 +29,4 @@ lumen-core = { path = "../crates/lumen-core" }
 lumen-playback = { path = "../crates/lumen-playback" }
 lumen-library = { path = "../crates/lumen-library" }
 lumen-platform = { path = "../crates/lumen-platform" }
+tauri-plugin-single-instance = "2"

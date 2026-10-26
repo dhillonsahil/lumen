@@ -624,3 +624,43 @@ pub async fn register_file_associations() -> Result<bool, LumenError> {
     }
     Ok(false)
 }
+
+static CLI_PENDING_PATHS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+pub fn set_initial_cli_paths(paths: Vec<String>) {
+    if let Ok(mut lock) = CLI_PENDING_PATHS.lock() {
+        *lock = paths;
+    }
+}
+
+pub fn extract_media_paths_from_args(args: &[String]) -> Vec<String> {
+    let mut media_paths = Vec::new();
+    for arg in args.iter().skip(1) {
+        if arg.starts_with('-') {
+            continue;
+        }
+        let trimmed = arg.trim_matches('"').trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let path = std::path::Path::new(trimmed);
+        if path.exists()
+            || trimmed.starts_with("http://")
+            || trimmed.starts_with("https://")
+            || trimmed.starts_with("rtsp://")
+            || trimmed.starts_with("file://")
+        {
+            media_paths.push(trimmed.to_string());
+        }
+    }
+    media_paths
+}
+
+#[tauri::command]
+pub fn get_cli_media() -> Vec<String> {
+    if let Ok(mut lock) = CLI_PENDING_PATHS.lock() {
+        std::mem::take(&mut *lock)
+    } else {
+        Vec::new()
+    }
+}

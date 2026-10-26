@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import { pickMediaFiles, pickFolder } from './utils/filePicker';
 
 export const App: React.FC = () => {
@@ -153,9 +154,30 @@ export const App: React.FC = () => {
       unlistenTauriEvent = unlisten;
     });
 
+    // 3. Cold start: check if media was opened via Windows Explorer double-click or CLI
+    invoke<string[]>('get_cli_media')
+      .then(async (paths) => {
+        if (Array.isArray(paths) && paths.length > 0) {
+          await openMedia(paths);
+        }
+      })
+      .catch((e) => console.warn('Failed to get CLI media', e));
+
+    // 4. Warm start: listen for files opened while Lumen is already running (single instance)
+    let unlistenCliEvent: (() => void) | null = null;
+    listen<string[]>('open-files-from-cli', async (event) => {
+      const paths = event.payload;
+      if (Array.isArray(paths) && paths.length > 0) {
+        await openMedia(paths);
+      }
+    }).then((unlisten) => {
+      unlistenCliEvent = unlisten;
+    });
+
     return () => {
       if (unlistenWebviewDragDrop) unlistenWebviewDragDrop();
       if (unlistenTauriEvent) unlistenTauriEvent();
+      if (unlistenCliEvent) unlistenCliEvent();
       if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     };
   }, [init, openMedia, addToPlaylist, importPlaylist, activeDrawer]);
