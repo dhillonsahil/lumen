@@ -49,9 +49,13 @@ jobs:
 
       - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
+          sudo mkdir -p /etc/needrestart/conf.d
+          echo '$nrconf{restart} = "a";' | sudo tee /etc/needrestart/conf.d/50local.conf || true
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             libmpv-dev \
             libasound2-dev \
             libwebkit2gtk-4.1-dev \
@@ -64,9 +68,7 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             rpm \
-            libfuse2 \
-            squashfs-tools \
-            patchelf
+            libfuse2
 
       - name: Install macOS system dependencies
         if: matrix.platform == 'macos-latest'
