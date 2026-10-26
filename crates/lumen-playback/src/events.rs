@@ -74,9 +74,24 @@ impl MpvEventLoop {
                         MpvEventId::FileLoaded => {
                             info!("mpv event: file-loaded");
                             let dur = mpv.get_property_double("duration").unwrap_or(0.0);
+                            let current_path = mpv.get_property_string("path").ok();
+                            let media_title = mpv.get_property_string("media-title").ok();
+                            let dwidth = mpv.get_property_int64("dwidth").ok().map(|w| w as u32);
+                            let dheight = mpv.get_property_int64("dheight").ok().map(|h| h as u32);
+
                             if let Ok(mut st) = status_lock.write() {
                                 st.duration = dur;
                                 st.state = PlaybackState::Playing;
+                                if let Some(p) = current_path {
+                                    st.path = Some(p.clone());
+                                    st.title = media_title.or(Some(p));
+                                }
+                                if dwidth.is_some() {
+                                    st.video_width = dwidth;
+                                }
+                                if dheight.is_some() {
+                                    st.video_height = dheight;
+                                }
                             }
                             if tx
                                 .blocking_send(LumenPlaybackEvent::DurationChanged(dur))
@@ -129,22 +144,27 @@ impl MpvEventLoop {
                                     break;
                                 }
                             } else if end_data.reason == 2 {
-                                // Explicit stop requested
-                                if let Ok(mut st) = status_lock.write() {
-                                    st.state = PlaybackState::Stopped;
-                                    st.path = None;
-                                    st.title = None;
-                                    st.position = 0.0;
-                                    st.duration = 0.0;
-                                    st.video_width = None;
-                                    st.video_height = None;
-                                }
-                                let current_status = backend.get_status_sync();
-                                if tx
-                                    .blocking_send(LumenPlaybackEvent::StateChanged(current_status))
-                                    .is_err()
-                                {
-                                    break;
+                                // Explicit stop requested or playlist track transitioned
+                                let is_idle = mpv.get_property_flag("idle").unwrap_or(true);
+                                let has_active_path = mpv.get_property_string("path").is_ok();
+
+                                if is_idle && !has_active_path {
+                                    if let Ok(mut st) = status_lock.write() {
+                                        st.state = PlaybackState::Stopped;
+                                        st.path = None;
+                                        st.title = None;
+                                        st.position = 0.0;
+                                        st.duration = 0.0;
+                                        st.video_width = None;
+                                        st.video_height = None;
+                                    }
+                                    let current_status = backend.get_status_sync();
+                                    if tx
+                                        .blocking_send(LumenPlaybackEvent::StateChanged(current_status))
+                                        .is_err()
+                                    {
+                                        break;
+                                    }
                                 }
                             } else if end_data.reason == 4 {
                                 // Error occurred during playback

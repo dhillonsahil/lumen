@@ -13,6 +13,7 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  Search,
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { usePlayerStore } from '../stores/playerStore';
@@ -41,8 +42,22 @@ export const PlaylistDrawer: React.FC = () => {
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [searchFilter, setSearchFilter] = useState('');
 
   if (activeDrawer !== 'playlist') return null;
+
+  const filteredItems = playlist.items
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .filter(({ item }) => {
+      if (!searchFilter.trim()) return true;
+      const q = searchFilter.toLowerCase();
+      return (
+        (item.title && item.title.toLowerCase().includes(q)) ||
+        item.path.toLowerCase().includes(q)
+      );
+    });
+
+  const visibleItems = filteredItems.slice(0, 300);
 
   const handleItemDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
@@ -250,6 +265,29 @@ export const PlaylistDrawer: React.FC = () => {
         </button>
       </div>
 
+      {/* Search Filter for large playlists */}
+      {playlist.items.length > 5 && (
+        <div
+          style={{
+            padding: '8px 16px',
+            borderBottom: '1px solid var(--glass-border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <Search size={14} style={{ color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            className="glass-input"
+            placeholder="Search channels / tracks..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            style={{ width: '100%', fontSize: '12px', padding: '5px 8px' }}
+          />
+        </div>
+      )}
+
       {/* Playlist Items */}
       <div
         style={{
@@ -283,144 +321,177 @@ export const PlaylistDrawer: React.FC = () => {
               Add Files...
             </button>
           </div>
+        ) : visibleItems.length === 0 ? (
+          <div
+            style={{
+              padding: '24px 16px',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              fontSize: '13px',
+            }}
+          >
+            No matches found for "{searchFilter}"
+          </div>
         ) : (
-          playlist.items.map((item, idx) => {
-            const isCurrent = playlist.current_index === idx;
-            const isDragging = draggedIndex === idx;
-            const isOverAbove = dragOverIndex === idx && draggedIndex !== null && draggedIndex > idx;
-            const isOverBelow = dragOverIndex === idx && draggedIndex !== null && draggedIndex < idx;
+          <>
+            {visibleItems.map(({ item, originalIndex }) => {
+              const isCurrent = playlist.current_index === originalIndex;
+              const isDragging = draggedIndex === originalIndex;
+              const isOverAbove =
+                dragOverIndex === originalIndex &&
+                draggedIndex !== null &&
+                draggedIndex > originalIndex;
+              const isOverBelow =
+                dragOverIndex === originalIndex &&
+                draggedIndex !== null &&
+                draggedIndex < originalIndex;
 
-            return (
-              <div
-                key={item.id}
-                draggable
-                onDragStart={(e) => handleItemDragStart(e, idx)}
-                onDragOver={(e) => handleItemDragOver(e, idx)}
-                onDragEnd={handleItemDragEnd}
-                onDrop={(e) => handleItemDrop(e, idx)}
-                className="glass-card"
-                style={{
-                  padding: '10px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'grab',
-                  opacity: isDragging ? 0.35 : 1,
-                  borderTop: isOverAbove ? '2px solid var(--accent)' : undefined,
-                  borderBottom: isOverBelow ? '2px solid var(--accent)' : undefined,
-                  borderColor: isCurrent ? 'var(--accent)' : 'var(--glass-border-subtle)',
-                  background: isCurrent ? 'rgba(99, 102, 241, 0.22)' : undefined,
-                  transition: 'opacity 0.15s ease, border-color 0.15s ease',
-                }}
-                onClick={() => playPlaylistItem(idx)}
-              >
+              return (
                 <div
+                  key={item.id}
+                  draggable
+                  onDragStart={(e) => handleItemDragStart(e, originalIndex)}
+                  onDragOver={(e) => handleItemDragOver(e, originalIndex)}
+                  onDragEnd={handleItemDragEnd}
+                  onDrop={(e) => handleItemDrop(e, originalIndex)}
+                  className="glass-card"
                   style={{
+                    padding: '10px 12px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    minWidth: 0,
-                    flex: 1,
+                    justifyContent: 'space-between',
+                    cursor: 'grab',
+                    opacity: isDragging ? 0.35 : 1,
+                    borderTop: isOverAbove ? '2px solid var(--accent)' : undefined,
+                    borderBottom: isOverBelow ? '2px solid var(--accent)' : undefined,
+                    borderColor: isCurrent ? 'var(--accent)' : 'var(--glass-border-subtle)',
+                    background: isCurrent ? 'rgba(99, 102, 241, 0.22)' : undefined,
+                    transition: 'opacity 0.15s ease, border-color 0.15s ease',
                   }}
+                  onClick={() => playPlaylistItem(originalIndex)}
                 >
-                  {/* Drag Handle Grip */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      color: 'var(--text-muted)',
-                      cursor: 'grab',
-                      padding: '2px',
-                    }}
-                    title="Drag to reorder"
-                  >
-                    <GripVertical size={13} />
-                  </div>
-
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: isCurrent ? 'var(--accent-light)' : 'var(--text-muted)',
-                      width: '18px',
+                      gap: '8px',
+                      minWidth: 0,
+                      flex: 1,
                     }}
                   >
-                    {idx + 1}
-                  </span>
+                    {/* Drag Handle Grip */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: 'var(--text-muted)',
+                        cursor: 'grab',
+                        padding: '2px',
+                      }}
+                      title="Drag to reorder"
+                    >
+                      <GripVertical size={13} />
+                    </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <span
                       style={{
-                        fontSize: '13px',
-                        fontWeight: isCurrent ? 700 : 500,
-                        color: isCurrent ? '#fff' : 'var(--text-primary)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: isCurrent ? 'var(--accent-light)' : 'var(--text-muted)',
+                        width: '24px',
                       }}
                     >
-                      {item.title}
+                      {originalIndex + 1}
                     </span>
-                    {item.duration > 0 && (
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                        {formatDuration(item.duration)}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: isCurrent ? 700 : 500,
+                          color: isCurrent ? '#fff' : 'var(--text-primary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.title}
                       </span>
+                      {item.duration > 0 && (
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                          {formatDuration(item.duration)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Reorder Up */}
+                    {originalIndex > 0 && (
+                      <button
+                        className="glass-btn glass-btn-icon"
+                        style={{ width: '22px', height: '22px', padding: 0 }}
+                        onClick={() => reorderPlaylistItem(originalIndex, originalIndex - 1)}
+                        title="Move Up"
+                      >
+                        <ChevronUp size={12} />
+                      </button>
                     )}
+
+                    {/* Reorder Down */}
+                    {originalIndex < playlist.items.length - 1 && (
+                      <button
+                        className="glass-btn glass-btn-icon"
+                        style={{ width: '22px', height: '22px', padding: 0 }}
+                        onClick={() => reorderPlaylistItem(originalIndex, originalIndex + 1)}
+                        title="Move Down"
+                      >
+                        <ChevronDown size={12} />
+                      </button>
+                    )}
+
+                    {isCurrent && (
+                      <Play size={13} style={{ color: 'var(--accent)', margin: '0 4px' }} />
+                    )}
+
+                    {/* Remove */}
+                    <button
+                      className="glass-btn glass-btn-icon"
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        background: 'transparent',
+                        border: 'none',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        removePlaylistItem(originalIndex);
+                      }}
+                      title="Remove from queue"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
                 </div>
-
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Reorder Up */}
-                  {idx > 0 && (
-                    <button
-                      className="glass-btn glass-btn-icon"
-                      style={{ width: '22px', height: '22px', padding: 0 }}
-                      onClick={() => reorderPlaylistItem(idx, idx - 1)}
-                      title="Move Up"
-                    >
-                      <ChevronUp size={12} />
-                    </button>
-                  )}
-
-                  {/* Reorder Down */}
-                  {idx < playlist.items.length - 1 && (
-                    <button
-                      className="glass-btn glass-btn-icon"
-                      style={{ width: '22px', height: '22px', padding: 0 }}
-                      onClick={() => reorderPlaylistItem(idx, idx + 1)}
-                      title="Move Down"
-                    >
-                      <ChevronDown size={12} />
-                    </button>
-                  )}
-
-                  {isCurrent && <Play size={13} style={{ color: 'var(--accent)', margin: '0 4px' }} />}
-
-                  {/* Remove */}
-                  <button
-                    className="glass-btn glass-btn-icon"
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      background: 'transparent',
-                      border: 'none',
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      removePlaylistItem(idx);
-                    }}
-                    title="Remove from queue"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
+              );
+            })}
+            {filteredItems.length > 300 && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  fontSize: '11px',
+                }}
+              >
+                Showing first 300 of {filteredItems.length} channels (use search above to filter)
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
     </div>

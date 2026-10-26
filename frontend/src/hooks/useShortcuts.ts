@@ -20,6 +20,8 @@ export const useShortcuts = () => {
     toggleFullscreen,
     toggleMiniPlayer,
     cycleAbLoop,
+    cycleAspectRatio,
+    openSettings,
     openMedia,
     openFolder,
   } = usePlayerStore();
@@ -92,8 +94,6 @@ export const useShortcuts = () => {
           e.preventDefault();
           cycleAbLoop();
           break;
-          seekRelative(-5);
-          break;
 
         case 'arrowup':
           e.preventDefault();
@@ -128,6 +128,11 @@ export const useShortcuts = () => {
 
         case 'a':
           e.preventDefault();
+          cycleAspectRatio();
+          break;
+
+        case 't':
+          e.preventDefault();
           setActiveModal(activeModal === 'tracks' ? null : 'tracks');
           break;
 
@@ -138,7 +143,7 @@ export const useShortcuts = () => {
 
         case 'i':
           e.preventDefault();
-          setActiveModal(activeModal === 'diagnostics' ? null : 'diagnostics');
+          openSettings('diagnostics');
           break;
 
         case 'n':
@@ -177,6 +182,8 @@ export const useShortcuts = () => {
     toggleFullscreen,
     toggleMiniPlayer,
     cycleAbLoop,
+    cycleAspectRatio,
+    openSettings,
     openMedia,
     openFolder,
   ]);

@@ -132,6 +132,42 @@ pub async fn open_url(url: String, state: State<'_, AppState>) -> Result<Playlis
     save_current_resume(&state).await;
 
     let clean = url.trim().to_string();
+
+    // Check if the URL points to an M3U/PLS channel playlist
+    let lower = clean.to_lowercase();
+    if lower.contains(".m3u") || lower.contains(".pls") {
+        if let Ok(output) = std::process::Command::new("curl.exe")
+            .args(["-s", "-L", "-m", "10", &clean])
+            .output()
+        {
+            let text = String::from_utf8_lossy(&output.stdout);
+            let is_hls = text.contains("#EXT-X-TARGETDURATION")
+                || text.contains("#EXT-X-STREAM-INF")
+                || text.contains("#EXT-X-MEDIA-SEQUENCE");
+
+            if text.contains("#EXTINF:") && !is_hls {
+                let mut parsed_pl = Playlist::from_m3u(&text);
+                if !parsed_pl.items.is_empty() {
+                    // Limit huge playlists to max 1000 channels to maintain responsive UI
+                    if parsed_pl.items.len() > 1000 {
+                        parsed_pl.items.truncate(1000);
+                    }
+                    parsed_pl.current_index = Some(0);
+                    let mut pl = state.playlist.write().await;
+                    *pl = parsed_pl.clone();
+                    drop(pl);
+
+                    if let Some(first) = parsed_pl.items.first() {
+                        let source = MediaSource::from_path_or_url(&first.path);
+                        let _ = state.backend.load(&source).await;
+                        let _ = state.backend.play().await;
+                    }
+                    return Ok(parsed_pl);
+                }
+            }
+        }
+    }
+
     let source = MediaSource::from_path_or_url(&clean);
 
     let mut playlist = state.playlist.write().await;

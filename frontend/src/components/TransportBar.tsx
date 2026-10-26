@@ -41,6 +41,7 @@ export const TransportBar: React.FC = () => {
     toggleFullscreen,
     toggleMiniPlayer,
     cycleAbLoop,
+    openSettings,
   } = usePlayerStore();
 
   const [isHoveringSeek, setIsHoveringSeek] = useState(false);
@@ -520,17 +521,17 @@ export const TransportBar: React.FC = () => {
 
           {/* Video Adjustments */}
           <button
-            className={`glass-btn glass-btn-icon ${activeModal === 'video' ? 'active' : ''}`}
-            onClick={() => setActiveModal(activeModal === 'video' ? null : 'video')}
-            title="Video Adjustments (Color, Aspect, Zoom)"
+            className="glass-btn glass-btn-icon"
+            onClick={() => openSettings('video')}
+            title="Video & Color Adjustments (Aspect, Color, Zoom)"
           >
             <Sliders size={16} />
           </button>
 
           {/* Equalizer */}
           <button
-            className={`glass-btn glass-btn-icon ${activeModal === 'equalizer' ? 'active' : ''}`}
-            onClick={() => setActiveModal(activeModal === 'equalizer' ? null : 'equalizer')}
+            className="glass-btn glass-btn-icon"
+            onClick={() => openSettings('equalizer')}
             title="10-Band Audio Equalizer"
           >
             <Activity size={16} />

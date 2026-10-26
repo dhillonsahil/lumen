@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Save,
@@ -10,6 +10,16 @@ import {
   Heart,
   Coffee,
   ExternalLink,
+  Activity,
+  SlidersHorizontal,
+  Cpu,
+  Power,
+  RotateCcw,
+  RotateCw,
+  FlipHorizontal,
+  FlipVertical,
+  CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { usePlayerStore } from '../stores/playerStore';
 import { AppSettings } from '../types';
@@ -23,9 +33,32 @@ const GithubIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, co
 );
 
 export const SettingsModal: React.FC = () => {
-  const { settings, saveSettings, setActiveModal, openExternalUrl } = usePlayerStore();
+  const {
+    settings,
+    saveSettings,
+    setActiveModal,
+    openExternalUrl,
+    settingsTab,
+    setSettingsTab,
+    equalizer,
+    setEqualizer,
+    videoAdjustments,
+    setVideoAdjustments,
+    diagnostics,
+    fetchDiagnostics,
+  } = usePlayerStore();
 
-  const [currentTab, setCurrentTab] = useState<'general' | 'folders' | 'shortcuts' | 'sponsor'>('general');
+  const currentTab = settingsTab;
+  const setCurrentTab = setSettingsTab;
+
+  useEffect(() => {
+    if (currentTab === 'diagnostics') {
+      fetchDiagnostics();
+      const interval = setInterval(fetchDiagnostics, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [currentTab, fetchDiagnostics]);
+
   const [form, setForm] = useState<AppSettings>(
     settings || {
       theme: 'dark',
@@ -55,23 +88,20 @@ export const SettingsModal: React.FC = () => {
       },
       shortcuts: {
         'Play/Pause': 'Space or K',
-        'Seek +10s': 'Right or L',
-        'Seek -10s': 'Left or J',
-        'Volume Up': 'Up',
-        'Volume Down': 'Down',
+        'Seek +5s / -5s': 'Right / Left',
+        'Volume Up / Down': 'Up / Down (Wheel)',
         Mute: 'M',
         Fullscreen: 'F',
-        'Exit Fullscreen': 'Esc',
+        'Mini-Player (PiP)': 'P or Shift+P',
+        'Cycle Aspect Ratio': 'A',
+        'A-B Loop': 'L',
         'Open File': 'Ctrl+O',
         'Open URL': 'Ctrl+U',
         'Open Folder': 'Ctrl+Shift+O',
         Screenshot: 'S',
-        'Next Item': 'N',
-        'Previous Item': 'P',
-        'Next Chapter': 'Ctrl+Right',
-        'Previous Chapter': 'Ctrl+Left',
         Playlist: 'Q',
         Library: 'Ctrl+B',
+        Diagnostics: 'I',
       },
     }
   );
@@ -102,32 +132,64 @@ export const SettingsModal: React.FC = () => {
     });
   };
 
-  const accents = [
-    { name: 'Indigo', color: '#6366f1' },
-    { name: 'Emerald', color: '#10b981' },
-    { name: 'Rose', color: '#f43f5e' },
-    { name: 'Sky', color: '#0ea5e9' },
-    { name: 'Amber', color: '#f59e0b' },
-    { name: 'Purple', color: '#a855f7' },
-  ];
+  // Equalizer presets & bands
+  const bandLabels = ['31Hz', '62Hz', '125Hz', '250Hz', '500Hz', '1kHz', '2kHz', '4kHz', '8kHz', '16kHz'];
+  const eqPresets: Record<string, [number, number, number, number, number, number, number, number, number, number]> = {
+    Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    'Bass Boost': [6.0, 5.0, 4.0, 2.0, 0, 0, 0, 0, 0, 0],
+    'Vocal Boost': [-2.0, -1.0, 0, 2.0, 4.5, 4.5, 3.0, 1.0, 0, -1.0],
+    Rock: [4.5, 3.0, 1.5, 0, -1.0, -0.5, 1.5, 3.0, 4.0, 4.5],
+    Pop: [-1.0, 1.0, 3.0, 4.0, 3.5, 1.5, 0, -1.0, 1.5, 2.0],
+    Jazz: [3.0, 2.0, 0, 1.5, -1.5, -1.5, 0, 1.5, 3.0, 3.5],
+    Classical: [4.0, 3.0, 2.5, 2.0, -1.0, -1.0, 0, 2.0, 3.0, 3.5],
+  };
+
+  const handleEqBandChange = (index: number, val: number) => {
+    const newBands = [...equalizer.bands] as [number, number, number, number, number, number, number, number, number, number];
+    newBands[index] = val;
+    setEqualizer({ bands: newBands, preset: 'Custom' });
+  };
+
+  const handleResetVideo = () => {
+    setVideoAdjustments({
+      brightness: 0,
+      contrast: 0,
+      saturation: 0,
+      hue: 0,
+      gamma: 0,
+      rotation: 0,
+      flip_h: false,
+      flip_v: false,
+      aspect_ratio: 'auto',
+      zoom: 1.0,
+      pan_x: 0,
+      pan_y: 0,
+      deinterlace: false,
+    });
+  };
+
+  const aspectRatios = ['auto', '16:9', '4:3', '21:9', '1:1'];
 
   const shortcutsList = [
     { action: 'Play / Pause', keys: 'Space or K' },
-    { action: 'Seek +5s / -5s', keys: 'Right / Left or L / J' },
-    { action: 'Volume Up / Down', keys: 'Up / Down (or Mouse Wheel)' },
-    { action: 'Seek via Wheel', keys: 'Shift + Mouse Wheel' },
-    { action: 'Toggle Mute', keys: 'M' },
-    { action: 'Toggle Fullscreen', keys: 'F (or Double-Click Video)' },
-    { action: 'Open File', keys: 'Ctrl + O' },
-    { action: 'Open Folder', keys: 'Ctrl + Shift + O' },
-    { action: 'Open Stream URL', keys: 'Ctrl + U' },
+    { action: 'Seek +5s / -5s', keys: 'Right / Left' },
+    { action: 'Seek +60s / -60s', keys: 'Shift + Right / Left' },
+    { action: 'Volume Up / Down (up to 200%)', keys: 'Up / Down (or Mouse Wheel)' },
+    { action: 'Frame Scrub', keys: 'Shift + Mouse Wheel' },
+    { action: 'Cycle Aspect Ratio', keys: 'A' },
+    { action: 'A-B Loop (Set A -> Set B -> Clear)', keys: 'L' },
+    { action: 'Mini-Player (PiP mode)', keys: 'P or Shift+P' },
+    { action: 'Toggle Fullscreen', keys: 'F' },
+    { action: 'Mute / Unmute', keys: 'M' },
+    { action: 'Audio & Subtitle Tracks', keys: 'S or S' },
     { action: 'Take Screenshot', keys: 'S' },
-    { action: 'Audio & Subtitle Tracks', keys: 'A or S' },
+    { action: 'Open File(s)', keys: 'Ctrl + O' },
+    { action: 'Open Folder', keys: 'Ctrl + Shift + O' },
+    { action: 'Open Network Stream URL', keys: 'Ctrl + U' },
+    { action: 'Playlist Queue', keys: 'Q' },
+    { action: 'Media Library & History', keys: 'Ctrl + B' },
     { action: 'Engine Diagnostics', keys: 'I' },
-    { action: 'Next / Prev Item', keys: 'N / P' },
-    { action: 'Next / Prev Chapter', keys: 'Ctrl + Right / Left' },
-    { action: 'Toggle Playlist Queue', keys: 'Q' },
-    { action: 'Toggle Library Drawer', keys: 'Ctrl + B' },
+    { action: 'Exit Fullscreen / Close Modal', keys: 'Esc' },
   ];
 
   return (
@@ -137,72 +199,110 @@ export const SettingsModal: React.FC = () => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '580px',
-        maxHeight: '84vh',
+        width: '680px',
+        maxWidth: '94vw',
+        maxHeight: '88vh',
         zIndex: 100,
         display: 'flex',
         flexDirection: 'column',
+        boxShadow: '0 25px 70px rgba(0, 0, 0, 0.85)',
       }}
       className="glass-panel"
     >
-      {/* Header */}
+      {/* Header Tabs */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '16px 20px',
+          padding: '12px 18px',
           borderBottom: '1px solid var(--glass-border-subtle)',
+          flexWrap: 'wrap',
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <button
             className={`glass-btn ${currentTab === 'general' ? 'glass-btn-primary' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '11px', gap: '5px' }}
             onClick={() => setCurrentTab('general')}
           >
-            <Sliders size={14} />
-            <span>Preferences</span>
+            <Sliders size={13} />
+            <span>General</span>
+          </button>
+
+          <button
+            className={`glass-btn ${currentTab === 'video' ? 'glass-btn-primary' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '11px', gap: '5px' }}
+            onClick={() => setCurrentTab('video')}
+          >
+            <SlidersHorizontal size={13} />
+            <span>Video & Color</span>
+          </button>
+
+          <button
+            className={`glass-btn ${currentTab === 'equalizer' ? 'glass-btn-primary' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '11px', gap: '5px' }}
+            onClick={() => setCurrentTab('equalizer')}
+          >
+            <Activity size={13} />
+            <span>Equalizer</span>
+          </button>
+
+          <button
+            className={`glass-btn ${currentTab === 'diagnostics' ? 'glass-btn-primary' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '11px', gap: '5px' }}
+            onClick={() => setCurrentTab('diagnostics')}
+          >
+            <Cpu size={13} />
+            <span>Diagnostics</span>
           </button>
 
           <button
             className={`glass-btn ${currentTab === 'folders' ? 'glass-btn-primary' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '11px', gap: '5px' }}
             onClick={() => setCurrentTab('folders')}
           >
-            <Folder size={14} />
+            <Folder size={13} />
             <span>Folders ({(form.watched_folders || []).length})</span>
           </button>
 
           <button
             className={`glass-btn ${currentTab === 'shortcuts' ? 'glass-btn-primary' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '11px', gap: '5px' }}
             onClick={() => setCurrentTab('shortcuts')}
           >
-            <Keyboard size={14} />
+            <Keyboard size={13} />
             <span>Shortcuts</span>
           </button>
 
           <button
             className={`glass-btn ${currentTab === 'sponsor' ? 'glass-btn-primary' : ''}`}
             style={{
+              padding: '6px 10px',
+              fontSize: '11px',
+              gap: '5px',
               borderColor: currentTab === 'sponsor' ? '#ec4899' : undefined,
               color: currentTab === 'sponsor' ? '#fff' : '#ec4899',
             }}
             onClick={() => setCurrentTab('sponsor')}
           >
-            <Heart size={14} fill={currentTab === 'sponsor' ? '#fff' : 'rgba(236,72,153,0.3)'} />
+            <Heart size={13} fill={currentTab === 'sponsor' ? '#fff' : 'rgba(236,72,153,0.3)'} />
             <span>Sponsor</span>
           </button>
         </div>
 
         <button
           className="glass-btn glass-btn-icon"
-          style={{ width: '30px', height: '30px' }}
+          style={{ width: '28px', height: '28px' }}
           onClick={() => setActiveModal(null)}
+          title="Close"
         >
-          <X size={16} />
+          <X size={15} />
         </button>
       </div>
 
-      {/* Body */}
+      {/* Body Content */}
       <div
         style={{
           padding: '20px',
@@ -212,165 +312,385 @@ export const SettingsModal: React.FC = () => {
           gap: '16px',
         }}
       >
+        {/* Tab 1: General Preferences */}
         {currentTab === 'general' && (
-          <>
-            {/* Accent Color */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600 }}>Accent Color Theme</label>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {accents.map((acc) => (
-                  <div
-                    key={acc.color}
-                    onClick={() => setForm({ ...form, accent_color: acc.color })}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      background: acc.color,
-                      cursor: 'pointer',
-                      border:
-                        form.accent_color === acc.color
-                          ? '3px solid #fff'
-                          : '1px solid rgba(255,255,255,0.2)',
-                      boxShadow:
-                        form.accent_color === acc.color
-                          ? `0 0 12px ${acc.color}`
-                          : 'none',
-                    }}
-                    title={acc.name}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Hardware Decoding */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600 }}>Hardware Decoding (mpv)</label>
-              <select
-                className="glass-input"
-                value={form.hwdec}
-                onChange={(e) => setForm({ ...form, hwdec: e.target.value })}
-              >
-                <option value="auto-safe" style={{ background: '#111420' }}>
-                  auto-safe (Recommended: Direct3D11 GPU with fallback)
-                </option>
-                <option value="auto" style={{ background: '#111420' }}>
-                  auto (Aggressive GPU decoding)
-                </option>
-                <option value="no" style={{ background: '#111420' }}>
-                  no (Software CPU decoding only)
-                </option>
-              </select>
-            </div>
-
-            {/* Language Preferences */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600 }}>Preferred Audio Track (alang)</label>
+                <label style={{ fontSize: '12px', fontWeight: 600 }}>Audio Language</label>
                 <input
                   type="text"
                   className="glass-input"
-                  placeholder="eng, jpn, und"
                   value={form.preferred_audio_lang}
                   onChange={(e) => setForm({ ...form, preferred_audio_lang: e.target.value })}
+                  placeholder="eng, jpn, fra"
                 />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600 }}>Preferred Subtitle Track (slang)</label>
+                <label style={{ fontSize: '12px', fontWeight: 600 }}>Subtitle Language</label>
                 <input
                   type="text"
                   className="glass-input"
-                  placeholder="eng, spa, fra"
                   value={form.preferred_subtitle_lang}
                   onChange={(e) => setForm({ ...form, preferred_subtitle_lang: e.target.value })}
+                  placeholder="eng, spa, ger"
                 />
               </div>
             </div>
 
-            {/* Checkbox settings */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600 }}>Hardware Decoding</label>
+                <select
+                  className="glass-input"
+                  value={form.hwdec}
+                  onChange={(e) => setForm({ ...form, hwdec: e.target.value })}
+                >
+                  <option value="auto-safe">auto-safe (Recommended)</option>
+                  <option value="auto">auto (Aggressive)</option>
+                  <option value="d3d11va">d3d11va (Windows Direct3D11)</option>
+                  <option value="nvdec">nvdec (NVIDIA CUDA)</option>
+                  <option value="no">no (Software CPU)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600 }}>Audio Channel Layout</label>
+                <select
+                  className="glass-input"
+                  value={form.channel_mode}
+                  onChange={(e) => setForm({ ...form, channel_mode: e.target.value })}
+                >
+                  <option value="stereo">Stereo (Downmix)</option>
+                  <option value="5.1">5.1 Surround</option>
+                  <option value="7.1">7.1 Surround</option>
+                  <option value="auto">Auto Passthrough</option>
+                </select>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                }}
-              >
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
                 <input
                   type="checkbox"
                   checked={form.resume_playback}
                   onChange={(e) => setForm({ ...form, resume_playback: e.target.checked })}
-                  style={{ accentColor: 'var(--accent)' }}
                 />
-                <span>Automatically resume last playback position (SQLite persistence)</span>
+                <span>Automatically resume playback position from history</span>
               </label>
 
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                }}
-              >
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
                 <input
                   type="checkbox"
-                  checked={form.autoplay_next !== false}
+                  checked={form.autoplay_next}
                   onChange={(e) => setForm({ ...form, autoplay_next: e.target.checked })}
-                  style={{ accentColor: 'var(--accent)' }}
                 />
-                <span>Auto-play next media in queue on completion</span>
+                <span>Auto-play next track in playlist queue</span>
               </label>
 
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                }}
-              >
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
                 <input
                   type="checkbox"
                   checked={form.auto_load_subtitles}
                   onChange={(e) => setForm({ ...form, auto_load_subtitles: e.target.checked })}
-                  style={{ accentColor: 'var(--accent)' }}
                 />
-                <span>Auto-load matching subtitle files from the video directory</span>
+                <span>Auto-load external subtitles with matching file name</span>
               </label>
             </div>
-          </>
+          </div>
         )}
 
+        {/* Tab 2: Video & Color Controls */}
+        {currentTab === 'video' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>Color & Video Tuning</span>
+              <button
+                className="glass-btn"
+                style={{ padding: '4px 10px', fontSize: '11px', gap: '4px' }}
+                onClick={handleResetVideo}
+              >
+                <RotateCcw size={12} />
+                <span>Reset All</span>
+              </button>
+            </div>
+
+            {/* Aspect Ratio */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Aspect Ratio Override (Shortcut: A)
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {aspectRatios.map((r) => (
+                  <button
+                    key={r}
+                    className={`glass-btn ${videoAdjustments.aspect_ratio === r ? 'glass-btn-primary' : ''}`}
+                    style={{ flex: 1, padding: '6px', fontSize: '12px' }}
+                    onClick={() => setVideoAdjustments({ aspect_ratio: r })}
+                  >
+                    {r.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Color Sliders */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[
+                { label: 'Brightness', key: 'brightness', min: -100, max: 100 },
+                { label: 'Contrast', key: 'contrast', min: -100, max: 100 },
+                { label: 'Saturation', key: 'saturation', min: -100, max: 100 },
+                { label: 'Hue', key: 'hue', min: -100, max: 100 },
+                { label: 'Gamma', key: 'gamma', min: -100, max: 100 },
+              ].map(({ label, key, min, max }) => (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span>{label}</span>
+                    <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>
+                      {(videoAdjustments as any)[key]}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={min}
+                    max={max}
+                    value={(videoAdjustments as any)[key]}
+                    onChange={(e) => setVideoAdjustments({ [key]: Number(e.target.value) })}
+                    className="slider"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Rotation & Flip */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                className="glass-btn"
+                style={{ flex: 1, padding: '8px', fontSize: '12px', gap: '6px' }}
+                onClick={() =>
+                  setVideoAdjustments({
+                    rotation: ((videoAdjustments.rotation + 90) % 360) as 0 | 90 | 180 | 270,
+                  })
+                }
+              >
+                <RotateCw size={14} />
+                <span>Rotate 90° ({videoAdjustments.rotation}°)</span>
+              </button>
+
+              <button
+                className={`glass-btn ${videoAdjustments.flip_h ? 'glass-btn-primary' : ''}`}
+                style={{ flex: 1, padding: '8px', fontSize: '12px', gap: '6px' }}
+                onClick={() => setVideoAdjustments({ flip_h: !videoAdjustments.flip_h })}
+              >
+                <FlipHorizontal size={14} />
+                <span>Flip H</span>
+              </button>
+
+              <button
+                className={`glass-btn ${videoAdjustments.flip_v ? 'glass-btn-primary' : ''}`}
+                style={{ flex: 1, padding: '8px', fontSize: '12px', gap: '6px' }}
+                onClick={() => setVideoAdjustments({ flip_v: !videoAdjustments.flip_v })}
+              >
+                <FlipVertical size={14} />
+                <span>Flip V</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Equalizer */}
+        {currentTab === 'equalizer' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700 }}>10-Band Equalizer</span>
+                <button
+                  className={`glass-btn ${equalizer.enabled ? 'glass-btn-primary' : ''}`}
+                  style={{ padding: '3px 10px', fontSize: '11px', gap: '4px' }}
+                  onClick={() => setEqualizer({ enabled: !equalizer.enabled })}
+                >
+                  <Power size={12} />
+                  <span>{equalizer.enabled ? 'ON' : 'BYPASS'}</span>
+                </button>
+              </div>
+
+              <button
+                className="glass-btn"
+                style={{ padding: '4px 10px', fontSize: '11px', gap: '4px' }}
+                onClick={() =>
+                  setEqualizer({
+                    preset: 'Flat',
+                    bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  })
+                }
+              >
+                <RotateCcw size={12} />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            {/* Presets */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {Object.keys(eqPresets).map((p) => (
+                <button
+                  key={p}
+                  className={`glass-btn ${equalizer.preset === p ? 'glass-btn-primary' : ''}`}
+                  style={{ padding: '4px 10px', fontSize: '11px' }}
+                  onClick={() => setEqualizer({ preset: p, bands: [...eqPresets[p]] })}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            {/* 10 Band Vertical Sliders */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '16px 8px',
+                background: 'rgba(0, 0, 0, 0.25)',
+                borderRadius: '8px',
+              }}
+            >
+              {bandLabels.map((lbl, idx) => (
+                <div
+                  key={lbl}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    height: '140px',
+                  }}
+                >
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                    {equalizer.bands[idx] > 0 ? `+${equalizer.bands[idx]}` : equalizer.bands[idx]}
+                  </span>
+                  <input
+                    type="range"
+                    min={-12}
+                    max={12}
+                    step={0.5}
+                    value={equalizer.bands[idx]}
+                    onChange={(e) => handleEqBandChange(idx, Number(e.target.value))}
+                    style={{
+                      writingMode: 'vertical-lr',
+                      direction: 'rtl',
+                      width: '6px',
+                      flex: 1,
+                      accentColor: 'var(--accent)',
+                    }}
+                  />
+                  <span style={{ fontSize: '10px', fontWeight: 600 }}>{lbl}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Diagnostics */}
+        {currentTab === 'diagnostics' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div
+              className="glass-card"
+              style={{
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderColor: 'rgba(16, 185, 129, 0.4)',
+                background: 'rgba(16, 185, 129, 0.1)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle size={18} style={{ color: '#10b981' }} />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#10b981' }}>
+                    libmpv-2.dll Loaded & Operational
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {diagnostics?.mpv_version || 'Loading engine version...'}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                className="glass-btn glass-btn-icon"
+                style={{ width: '28px', height: '28px' }}
+                onClick={() => fetchDiagnostics()}
+                title="Refresh"
+              >
+                <RefreshCw size={13} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="glass-card" style={{ padding: '10px 14px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Video Output (VO)</span>
+                <div style={{ fontSize: '13px', fontWeight: 600 }}>{diagnostics?.active_vo || 'gpu-next'}</div>
+              </div>
+              <div className="glass-card" style={{ padding: '10px 14px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>GPU Context</span>
+                <div style={{ fontSize: '13px', fontWeight: 600 }}>{diagnostics?.active_gpu_context || 'd3d11'}</div>
+              </div>
+              <div className="glass-card" style={{ padding: '10px 14px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Hardware Decoding (HWDEC)</span>
+                <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                  {diagnostics?.hwdec_current && diagnostics.hwdec_current !== 'no'
+                    ? `GPU Accelerated (${diagnostics.hwdec_current})`
+                    : 'Software (CPU)'}
+                </div>
+              </div>
+              <div className="glass-card" style={{ padding: '10px 14px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Active Media</span>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={diagnostics?.current_file || 'None'}
+                >
+                  {diagnostics?.current_file ? diagnostics.current_file.split(/[/\\]/).pop() : 'No media loaded'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: Watched Folders */}
         {currentTab === 'folders' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Watched Library Folders</span>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                Watched folders are automatically indexed into the local SQLite media library:
+              </p>
               <button
                 className="glass-btn glass-btn-primary"
-                style={{ fontSize: '12px', padding: '5px 12px', gap: '4px' }}
+                style={{ padding: '6px 12px', fontSize: '12px', gap: '6px' }}
                 onClick={handleAddWatchedFolder}
               >
                 <FolderPlus size={14} />
-                <span>Add Folder...</span>
+                <span>Add Folder</span>
               </button>
             </div>
 
             {(form.watched_folders || []).length === 0 ? (
               <div
                 style={{
-                  padding: '28px',
+                  padding: '24px',
                   textAlign: 'center',
                   color: 'var(--text-muted)',
                   fontSize: '13px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderRadius: '8px',
                 }}
               >
-                No watched folders configured yet. Add folders to index your videos automatically.
+                No watched folders configured yet.
               </div>
             ) : (
               (form.watched_folders || []).map((folder) => (
@@ -378,21 +698,14 @@ export const SettingsModal: React.FC = () => {
                   key={folder}
                   className="glass-card"
                   style={{
-                    padding: '10px 14px',
+                    padding: '8px 12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    fontSize: '12px',
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: '13px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: '440px',
-                    }}
-                  >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '440px' }}>
                     {folder}
                   </span>
                   <button
@@ -409,6 +722,7 @@ export const SettingsModal: React.FC = () => {
           </div>
         )}
 
+        {/* Tab 6: Shortcuts */}
         {currentTab === 'shortcuts' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {shortcutsList.map((sc) => (
@@ -440,6 +754,7 @@ export const SettingsModal: React.FC = () => {
           </div>
         )}
 
+        {/* Tab 7: Sponsor */}
         {currentTab === 'sponsor' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div
@@ -459,8 +774,7 @@ export const SettingsModal: React.FC = () => {
                   Support Lumen Development
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                  Lumen v2 is free and open source. Your support directly funds development and
-                  performance enhancements.
+                  Lumen v2 is 100% free and open-source software built with Rust and libmpv.
                 </div>
               </div>
             </div>

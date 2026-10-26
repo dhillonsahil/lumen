@@ -173,7 +173,9 @@ impl Playlist {
             if let Some(rest) = trimmed.strip_prefix("#EXTINF:") {
                 let parts: Vec<&str> = rest.splitn(2, ',').collect();
                 if let Some(dur_str) = parts.first() {
-                    pending_duration = dur_str.trim().parse::<f64>().unwrap_or(0.0);
+                    let dur_clean = dur_str.split_whitespace().next().unwrap_or("0");
+                    let parsed = dur_clean.trim().parse::<f64>().unwrap_or(0.0);
+                    pending_duration = if parsed > 0.0 { parsed } else { 0.0 };
                 }
                 if parts.len() > 1 {
                     pending_title = Some(parts[1].trim().to_string());

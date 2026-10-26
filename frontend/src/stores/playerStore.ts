@@ -16,6 +16,8 @@ import {
   RepeatMode,
 } from '../types';
 
+let _hudTimer: any = null;
+
 interface PlayerStore {
   status: PlaybackStatus;
   tracks: MediaTrack[];
@@ -29,16 +31,22 @@ interface PlayerStore {
   diagnostics: import('../types').MpvDiagnostics | null;
 
   activeModal: 'tracks' | 'equalizer' | 'video' | 'settings' | 'open_url' | 'diagnostics' | 'sponsor' | null;
+  settingsTab: 'general' | 'video' | 'equalizer' | 'diagnostics' | 'folders' | 'shortcuts' | 'sponsor';
   activeDrawer: 'playlist' | 'library' | null;
   controlsVisible: boolean;
   isFullscreen: boolean;
   isMiniPlayer: boolean;
+  hudMessage: { text: string; icon: string } | null;
 
   // Actions
   init: () => Promise<void>;
+  showHud: (text: string, icon?: string) => void;
   fetchDiagnostics: () => Promise<void>;
   setControlsVisible: (visible: boolean) => void;
   setActiveModal: (modal: PlayerStore['activeModal']) => void;
+  setSettingsTab: (tab: PlayerStore['settingsTab']) => void;
+  openSettings: (tab?: PlayerStore['settingsTab']) => void;
+  cycleAspectRatio: () => Promise<string>;
   setActiveDrawer: (drawer: PlayerStore['activeDrawer']) => void;
   setIsFullscreen: (fullscreen: boolean) => void;
   toggleFullscreen: () => Promise<void>;
@@ -151,13 +159,45 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   diagnostics: null,
 
   activeModal: null,
+  settingsTab: 'general',
   activeDrawer: null,
   controlsVisible: true,
   isFullscreen: false,
   isMiniPlayer: false,
+  hudMessage: null,
+
+  showHud: (text: string, icon: string = 'info') => {
+    set({ hudMessage: { text, icon } });
+    if (_hudTimer) clearTimeout(_hudTimer);
+    _hudTimer = setTimeout(() => {
+      set({ hudMessage: null });
+    }, 1200);
+  },
 
   setControlsVisible: (visible) => set({ controlsVisible: visible }),
-  setActiveModal: (modal) => set({ activeModal: modal }),
+  setActiveModal: (modal) => {
+    if (modal === 'equalizer') {
+      set({ activeModal: 'settings', settingsTab: 'equalizer' });
+    } else if (modal === 'video') {
+      set({ activeModal: 'settings', settingsTab: 'video' });
+    } else if (modal === 'diagnostics') {
+      set({ activeModal: 'settings', settingsTab: 'diagnostics' });
+    } else {
+      set({ activeModal: modal });
+    }
+  },
+  setSettingsTab: (tab) => set({ settingsTab: tab }),
+  openSettings: (tab) =>
+    set({ activeModal: 'settings', settingsTab: tab || 'general' }),
+  cycleAspectRatio: async () => {
+    const ratios = ['auto', '16:9', '4:3', '21:9', '1:1'];
+    const current = get().videoAdjustments.aspect_ratio || 'auto';
+    const idx = ratios.indexOf(current);
+    const nextRatio = ratios[(idx + 1) % ratios.length];
+    await get().setVideoAdjustments({ aspect_ratio: nextRatio });
+    get().showHud(`Aspect Ratio: ${nextRatio.toUpperCase()}`, 'video');
+    return nextRatio;
+  },
   setActiveDrawer: (drawer) => set({ activeDrawer: drawer }),
   setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
 
@@ -327,6 +367,9 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     try {
       const pl = await invoke<Playlist>('open_url', { url });
       set({ playlist: pl });
+      if (pl.items.length > 1) {
+        set({ activeDrawer: 'playlist' });
+      }
     } catch (e) {
       console.error('Failed to open URL', e);
     }
@@ -455,6 +498,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       const savedPath = await invoke<string>('take_screenshot', {
         filename: filename || null,
       });
+      if (savedPath) {
+        const fileOnly = savedPath.split(/[/\\]/).pop();
+        get().showHud(`Screenshot: ${fileOnly}`, 'camera');
+      }
       return savedPath;
     } catch (e) {
       console.error('Failed to take screenshot', e);
@@ -466,6 +513,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     try {
       const st = await invoke<PlaybackStatus>('cycle_ab_loop');
       set({ status: st });
+      if (st.ab_loop_a !== null && st.ab_loop_b !== null) {
+        get().showHud('A-B Loop: Active', 'repeat');
+      } else if (st.ab_loop_a !== null) {
+        get().showHud('A-B Loop: Point A Set', 'repeat');
+      } else {
+        get().showHud('A-B Loop: Cleared', 'repeat');
+      }
     } catch (e) {
       console.error('Failed to cycle AB loop', e);
     }

@@ -67,6 +67,59 @@ export const OpenUrlModal: React.FC = () => {
           onChange={(e) => setUrl(e.target.value)}
         />
 
+        {/* Quick Sample Streams */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
+            Sample Streams:
+          </span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            <button
+              type="button"
+              className="glass-btn"
+              style={{ fontSize: '11px', padding: '3px 8px' }}
+              onClick={() =>
+                setUrl(
+                  'https://hls-harbor-livepush.akamaized.net/live_cdn/nsqIStpj8PaG-Ev/emcQJ0pGpremocy/index.m3u8'
+                )
+              }
+            >
+              Livepush HLS
+            </button>
+            <button
+              type="button"
+              className="glass-btn"
+              style={{ fontSize: '11px', padding: '3px 8px' }}
+              onClick={() =>
+                setUrl('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8')
+              }
+            >
+              Big Buck Bunny
+            </button>
+            <button
+              type="button"
+              className="glass-btn"
+              style={{ fontSize: '11px', padding: '3px 8px' }}
+              onClick={() =>
+                setUrl('https://iptv-org.github.io/iptv/index.m3u')
+              }
+            >
+              IPTV Channels (M3U)
+            </button>
+            <button
+              type="button"
+              className="glass-btn"
+              style={{ fontSize: '11px', padding: '3px 8px' }}
+              onClick={() =>
+                setUrl(
+                  'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8'
+                )
+              }
+            >
+              Tears of Steel
+            </button>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <button
             type="button"

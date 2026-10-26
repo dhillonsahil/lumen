@@ -13,7 +13,6 @@
 [![Engine: libmpv](https://img.shields.io/badge/Engine-libmpv-critical.svg)](https://mpv.io)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-isahildhillon-yellow?logo=buy-me-a-coffee)](https://buymeacoffee.com/isahildhillon)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-dhillonsahil-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/dhillonsahil)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-dhillonsahil-00b9fe?logo=ko-fi)](https://ko-fi.com/dhillonsahil)
 
 </div>
 
@@ -217,7 +216,6 @@ Lumen v2 is 100% free and open-source software created by independent developers
 
 - ☕ **Buy Me a Coffee**: [https://buymeacoffee.com/isahildhillon](https://buymeacoffee.com/isahildhillon)
 - 💖 **GitHub Sponsors**: [https://github.com/sponsors/dhillonsahil](https://github.com/sponsors/dhillonsahil)
-- 🥤 **Ko-fi**: [https://ko-fi.com/dhillonsahil](https://ko-fi.com/dhillonsahil)
 - ⭐ **Star the Repository**: [https://github.com/dhillonsahil/lumen](https://github.com/dhillonsahil/lumen)
 
 ---

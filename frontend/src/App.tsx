@@ -26,6 +26,9 @@ import {
   Clock,
   Keyboard,
   Sparkles,
+  Sliders,
+  Repeat,
+  Camera,
 } from 'lucide-react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
@@ -51,6 +54,7 @@ export const App: React.FC = () => {
     toggleMiniPlayer,
     setVolume,
     seekRelative,
+    hudMessage: storeHudMessage,
   } = usePlayerStore();
 
   useShortcuts();
@@ -64,9 +68,9 @@ export const App: React.FC = () => {
   const hudTimerRef = useRef<number | null>(null);
 
   const hasMedia =
-    Boolean(status.path) &&
-    status.state !== 'idle' &&
-    status.state !== 'stopped';
+    status.state === 'playing' ||
+    status.state === 'paused' ||
+    (Boolean(status.path) && status.state !== 'idle' && status.state !== 'stopped');
 
   // Synchronize documentElement & body class whenever hasMedia changes
   useEffect(() => {
@@ -549,7 +553,7 @@ export const App: React.FC = () => {
         )}
 
         {/* Heads-Up Display (HUD) feedback overlay */}
-        {hudMessage && (
+        {(storeHudMessage || hudMessage) && (
           <div
             style={{
               position: 'absolute',
@@ -573,12 +577,31 @@ export const App: React.FC = () => {
               animation: 'fadeIn 0.15s ease',
             }}
           >
-            {hudMessage.icon === 'play' && <Play size={16} style={{ color: 'var(--accent)' }} />}
-            {hudMessage.icon === 'volume' && <Volume2 size={16} style={{ color: 'var(--accent)' }} />}
-            {hudMessage.icon === 'mute' && <VolumeX size={16} style={{ color: '#ef4444' }} />}
-            {hudMessage.icon === 'forward' && <FastForward size={16} style={{ color: 'var(--accent)' }} />}
-            {hudMessage.icon === 'rewind' && <Rewind size={16} style={{ color: 'var(--accent)' }} />}
-            <span>{hudMessage.text}</span>
+            {(storeHudMessage || hudMessage)!.icon === 'play' && (
+              <Play size={16} style={{ color: 'var(--accent)' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'volume' && (
+              <Volume2 size={16} style={{ color: 'var(--accent)' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'mute' && (
+              <VolumeX size={16} style={{ color: '#ef4444' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'forward' && (
+              <FastForward size={16} style={{ color: 'var(--accent)' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'rewind' && (
+              <Rewind size={16} style={{ color: 'var(--accent)' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'video' && (
+              <Sliders size={16} style={{ color: 'var(--accent-light)' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'repeat' && (
+              <Repeat size={16} style={{ color: '#ec4899' }} />
+            )}
+            {(storeHudMessage || hudMessage)!.icon === 'camera' && (
+              <Camera size={16} style={{ color: 'var(--accent-light)' }} />
+            )}
+            <span>{(storeHudMessage || hudMessage)!.text}</span>
           </div>
         )}
 

@@ -7,7 +7,6 @@ import {
   Copy,
   Check,
   Star,
-  Sparkles,
 } from 'lucide-react';
 import { usePlayerStore } from '../stores/playerStore';
 
@@ -42,16 +41,6 @@ export const SponsorModal: React.FC = () => {
       icon: <Heart size={20} color="#ec4899" fill="rgba(236,72,153,0.3)" />,
       badge: 'Official',
       color: '#ec4899',
-    },
-    {
-      id: 'kofi',
-      title: 'Ko-fi',
-      handle: 'dhillonsahil',
-      url: 'https://ko-fi.com/dhillonsahil',
-      description: 'Support development with 0% platform transaction fees.',
-      icon: <Sparkles size={20} color="#00b9fe" />,
-      badge: '0% Fees',
-      color: '#00b9fe',
     },
     {
       id: 'repo',

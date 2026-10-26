@@ -31,6 +31,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose }) => {
     setIsFullscreen,
     toggleMiniPlayer,
     cycleAbLoop,
+    cycleAspectRatio,
+    openSettings,
   } = usePlayerStore();
 
   useEffect(() => {
@@ -77,14 +79,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose }) => {
       action: () => setActiveModal('tracks'),
     },
     {
-      label: 'Video Adjustments...',
+      label: 'Video & Color Adjustments...',
       icon: <Sliders size={14} />,
-      action: () => setActiveModal('video'),
+      action: () => openSettings('video'),
     },
     {
       label: 'Equalizer...',
       icon: <Activity size={14} />,
-      action: () => setActiveModal('equalizer'),
+      action: () => openSettings('equalizer'),
+    },
+    {
+      label: 'Cycle Aspect Ratio (A)',
+      icon: <Sliders size={14} />,
+      action: () => cycleAspectRatio(),
     },
     {
       label: 'A-B Loop (L)',

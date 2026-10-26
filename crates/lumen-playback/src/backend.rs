@@ -104,12 +104,9 @@ impl MpvBackend {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         );
         let _ = mpv.set_option_string("tls-verify", "no");
-        let _ = mpv.set_option_string(
-            "demuxer-lavf-o",
-            "protocol_whitelist=file,http,https,tcp,tls,crypto,data",
-        );
         let _ = mpv.set_option_string("demuxer-max-bytes", "150MiB");
         let _ = mpv.set_option_string("demuxer-max-back-bytes", "50MiB");
+        let _ = mpv.set_option_string("stream-buffer-size", "4MiB");
         let _ = mpv.set_option_string("ytdl", "yes");
 
         // Hardware decoding
@@ -301,6 +298,24 @@ impl MediaBackend for MpvBackend {
 
         let path_str = source.as_str();
         info!("Loading media: {}", path_str);
+
+        // For HTTP/HTTPS streams, configure referrer to satisfy CDN hotlink protection
+        if path_str.starts_with("http://") || path_str.starts_with("https://") {
+            if path_str.contains("livepush") {
+                let _ = self.mpv.set_property_string("referrer", "https://livepush.io/");
+            } else if let Some(scheme_end) = path_str.find("://") {
+                let after_scheme = &path_str[scheme_end + 3..];
+                let host = if let Some(slash) = after_scheme.find('/') {
+                    &after_scheme[..slash]
+                } else {
+                    after_scheme
+                };
+                let ref_url = format!("https://{}/", host);
+                let _ = self.mpv.set_property_string("referrer", &ref_url);
+            }
+        } else {
+            let _ = self.mpv.set_property_string("referrer", "");
+        }
 
         {
             let mut status = self.status.write().unwrap();

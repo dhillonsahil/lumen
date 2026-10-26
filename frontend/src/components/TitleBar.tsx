@@ -22,6 +22,7 @@ export const TitleBar: React.FC = () => {
     takeScreenshot,
     activeModal,
     setActiveModal,
+    openSettings,
   } = usePlayerStore();
 
   const handleOpenFile = async () => {
@@ -113,9 +114,7 @@ export const TitleBar: React.FC = () => {
         {/* Hardware decoding badge */}
         {status.state !== 'idle' && (
           <div
-            onClick={() =>
-              setActiveModal(activeModal === 'diagnostics' ? null : 'diagnostics')
-            }
+            onClick={() => openSettings('diagnostics')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -199,19 +198,10 @@ export const TitleBar: React.FC = () => {
         </button>
 
         <button
-          className={`glass-btn glass-btn-icon ${activeModal === 'diagnostics' ? 'active' : ''}`}
-          style={{ width: '32px', height: '32px' }}
-          onClick={() => setActiveModal(activeModal === 'diagnostics' ? null : 'diagnostics')}
-          title="libmpv Engine Diagnostics (I)"
-        >
-          <Cpu size={15} />
-        </button>
-
-        <button
           className={`glass-btn glass-btn-icon ${activeModal === 'settings' ? 'active' : ''}`}
           style={{ width: '32px', height: '32px' }}
-          onClick={() => setActiveModal(activeModal === 'settings' ? null : 'settings')}
-          title="Settings"
+          onClick={() => openSettings('general')}
+          title="Settings & Controls"
         >
           <Settings size={15} />
         </button>
