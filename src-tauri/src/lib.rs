@@ -167,7 +167,10 @@ pub fn run() {
             open_folder_dialog,
             open_subtitle_dialog,
             toggle_fullscreen,
-            toggle_mini_player
+            toggle_mini_player,
+            cycle_ab_loop,
+            clear_ab_loop,
+            open_external_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running Lumen v2 desktop application");

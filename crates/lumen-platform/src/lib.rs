@@ -20,6 +20,12 @@ pub fn get_settings_path() -> PathBuf {
     get_app_config_dir().join("settings.json")
 }
 
+pub fn get_pictures_dir() -> PathBuf {
+    dirs::picture_dir()
+        .unwrap_or_else(get_app_data_dir)
+        .join("Lumen")
+}
+
 #[cfg(target_os = "windows")]
 pub fn extract_hwnd(raw_hwnd: isize) -> i64 {
     raw_hwnd as i64

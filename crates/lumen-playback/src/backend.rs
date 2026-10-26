@@ -40,6 +40,8 @@ pub trait MediaBackend: Send + Sync {
     async fn set_video_adjustments(&self, adj: &VideoAdjustments) -> Result<(), PlaybackError>;
     async fn set_equalizer(&self, eq: &EqualizerState) -> Result<(), PlaybackError>;
     async fn frame_step(&self, forward: bool) -> Result<(), PlaybackError>;
+    async fn cycle_ab_loop(&self) -> Result<(), PlaybackError>;
+    async fn clear_ab_loop(&self) -> Result<(), PlaybackError>;
 }
 
 pub struct MpvBackend {
@@ -96,6 +98,20 @@ impl MpvBackend {
         mpv.set_option_string("input-default-bindings", "no")?;
         mpv.set_option_string("input-vo-keyboard", "no")?;
 
+        // Network streaming & HLS/DASH/Direct URL protocol options
+        let _ = mpv.set_option_string(
+            "user-agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        );
+        let _ = mpv.set_option_string("tls-verify", "no");
+        let _ = mpv.set_option_string(
+            "demuxer-lavf-o",
+            "protocol_whitelist=file,http,https,tcp,tls,crypto,data",
+        );
+        let _ = mpv.set_option_string("demuxer-max-bytes", "150MiB");
+        let _ = mpv.set_option_string("demuxer-max-back-bytes", "50MiB");
+        let _ = mpv.set_option_string("ytdl", "yes");
+
         // Hardware decoding
         let hwdec_mode = hwdec.unwrap_or("auto-safe");
         mpv.set_option_string("hwdec", hwdec_mode)?;
@@ -130,6 +146,8 @@ impl MpvBackend {
         mpv.observe_property(13, "dwidth", MpvFormat::Int64)?;
         mpv.observe_property(14, "dheight", MpvFormat::Int64)?;
         mpv.observe_property(15, "hwdec-current", MpvFormat::String)?;
+        mpv.observe_property(16, "ab-loop-a", MpvFormat::Double)?;
+        mpv.observe_property(17, "ab-loop-b", MpvFormat::Double)?;
 
         Ok(Self {
             mpv,
@@ -517,6 +535,27 @@ impl MediaBackend for MpvBackend {
         } else {
             self.mpv.command(&["frame-back-step"])?;
         }
+        Ok(())
+    }
+
+    async fn cycle_ab_loop(&self) -> Result<(), PlaybackError> {
+        self.mpv.command(&["ab-loop"])?;
+        let loop_a = self.mpv.get_property_double("ab-loop-a").ok();
+        let loop_b = self.mpv.get_property_double("ab-loop-b").ok();
+        let mut st = self.status.write().unwrap();
+        st.ab_loop_a = loop_a;
+        st.ab_loop_b = loop_b;
+        info!("A-B loop cycled: A={:?}, B={:?}", loop_a, loop_b);
+        Ok(())
+    }
+
+    async fn clear_ab_loop(&self) -> Result<(), PlaybackError> {
+        let _ = self.mpv.set_property_string("ab-loop-a", "no");
+        let _ = self.mpv.set_property_string("ab-loop-b", "no");
+        let mut st = self.status.write().unwrap();
+        st.ab_loop_a = None;
+        st.ab_loop_b = None;
+        info!("A-B loop cleared");
         Ok(())
     }
 }

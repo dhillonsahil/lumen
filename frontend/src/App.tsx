@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { TitleBar } from './components/TitleBar';
 import { TransportBar } from './components/TransportBar';
+import { MiniPlayerOverlay } from './components/MiniPlayerOverlay';
 import { ContextMenu } from './components/ContextMenu';
 import { TrackSelectionModal } from './modals/TrackSelectionModal';
 import { EqualizerModal } from './modals/EqualizerModal';
@@ -8,6 +9,7 @@ import { VideoAdjustmentsModal } from './modals/VideoAdjustmentsModal';
 import { OpenUrlModal } from './modals/OpenUrlModal';
 import { SettingsModal } from './modals/SettingsModal';
 import { DiagnosticModal } from './modals/DiagnosticModal';
+import { SponsorModal } from './modals/SponsorModal';
 import { PlaylistDrawer } from './drawers/PlaylistDrawer';
 import { LibraryDrawer } from './drawers/LibraryDrawer';
 import { usePlayerStore } from './stores/playerStore';
@@ -45,6 +47,8 @@ export const App: React.FC = () => {
     importPlaylist,
     togglePlay,
     toggleFullscreen,
+    isMiniPlayer,
+    toggleMiniPlayer,
     setVolume,
     seekRelative,
   } = usePlayerStore();
@@ -218,7 +222,11 @@ export const App: React.FC = () => {
       clearTimeout(clickTimerRef.current);
       clickTimerRef.current = null;
     }
-    toggleFullscreen();
+    if (isMiniPlayer) {
+      toggleMiniPlayer();
+    } else {
+      toggleFullscreen();
+    }
   };
 
   // Mouse wheel over the video area: volume and seek
@@ -501,35 +509,43 @@ export const App: React.FC = () => {
 
       {/* Layer 3: Controls Layer */}
       <div className="controls-layer">
-        {/* Top Title Bar */}
-        <div
-          className="interactive"
-          style={{
-            opacity: controlsVisible || !hasMedia || activeModal ? 1 : 0,
-            pointerEvents:
-              controlsVisible || !hasMedia || activeModal ? 'auto' : 'none',
-            transition: 'opacity 0.25s ease',
-          }}
-        >
-          <TitleBar />
-        </div>
-
-        {/* Floating Bottom Transport Bar */}
-        {hasMedia && (
-          <div
-            className="interactive"
-            style={{
-              opacity:
-                controlsVisible || status.state === 'paused' || activeModal ? 1 : 0,
-              pointerEvents:
-                controlsVisible || status.state === 'paused' || activeModal
-                  ? 'auto'
-                  : 'none',
-              transition: 'opacity 0.25s ease',
-            }}
-          >
-            <TransportBar />
+        {isMiniPlayer && hasMedia ? (
+          <div className="interactive">
+            <MiniPlayerOverlay />
           </div>
+        ) : (
+          <>
+            {/* Top Title Bar */}
+            <div
+              className="interactive"
+              style={{
+                opacity: controlsVisible || !hasMedia || activeModal ? 1 : 0,
+                pointerEvents:
+                  controlsVisible || !hasMedia || activeModal ? 'auto' : 'none',
+                transition: 'opacity 0.25s ease',
+              }}
+            >
+              <TitleBar />
+            </div>
+
+            {/* Floating Bottom Transport Bar */}
+            {hasMedia && (
+              <div
+                className="interactive"
+                style={{
+                  opacity:
+                    controlsVisible || status.state === 'paused' || activeModal ? 1 : 0,
+                  pointerEvents:
+                    controlsVisible || status.state === 'paused' || activeModal
+                      ? 'auto'
+                      : 'none',
+                  transition: 'opacity 0.25s ease',
+                }}
+              >
+                <TransportBar />
+              </div>
+            )}
+          </>
         )}
 
         {/* Heads-Up Display (HUD) feedback overlay */}
@@ -622,6 +638,11 @@ export const App: React.FC = () => {
         {activeModal === 'diagnostics' && (
           <div className="interactive">
             <DiagnosticModal />
+          </div>
+        )}
+        {activeModal === 'sponsor' && (
+          <div className="interactive">
+            <SponsorModal />
           </div>
         )}
 

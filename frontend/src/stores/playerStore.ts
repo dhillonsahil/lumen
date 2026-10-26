@@ -28,7 +28,7 @@ interface PlayerStore {
   settings: AppSettings | null;
   diagnostics: import('../types').MpvDiagnostics | null;
 
-  activeModal: 'tracks' | 'equalizer' | 'video' | 'settings' | 'open_url' | 'diagnostics' | null;
+  activeModal: 'tracks' | 'equalizer' | 'video' | 'settings' | 'open_url' | 'diagnostics' | 'sponsor' | null;
   activeDrawer: 'playlist' | 'library' | null;
   controlsVisible: boolean;
   isFullscreen: boolean;
@@ -43,6 +43,9 @@ interface PlayerStore {
   setIsFullscreen: (fullscreen: boolean) => void;
   toggleFullscreen: () => Promise<void>;
   toggleMiniPlayer: () => Promise<void>;
+  cycleAbLoop: () => Promise<void>;
+  clearAbLoop: () => Promise<void>;
+  openExternalUrl: (url: string) => Promise<void>;
 
   // Playback commands
   openMedia: (paths: string[]) => Promise<void>;
@@ -61,7 +64,7 @@ interface PlayerStore {
   setAudioTrack: (id: number | null) => Promise<void>;
   setSubtitleTrack: (id: number | null) => Promise<void>;
   loadExternalSubtitle: (path: string) => Promise<void>;
-  takeScreenshot: (path: string) => Promise<void>;
+  takeScreenshot: (filename?: string) => Promise<string | null>;
   frameStep: (forward: boolean) => Promise<void>;
 
   // Extended controls
@@ -111,6 +114,8 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     cache_seconds: 0,
     seeking: false,
     error_message: null,
+    ab_loop_a: null,
+    ab_loop_b: null,
   },
   tracks: [],
   chapters: [],
@@ -319,8 +324,12 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   openUrl: async (url) => {
     document.documentElement.classList.add('media-loaded');
     document.body.classList.add('media-loaded');
-    await invoke('open_url', { url });
-    await get().fetchPlaylist();
+    try {
+      const pl = await invoke<Playlist>('open_url', { url });
+      set({ playlist: pl });
+    } catch (e) {
+      console.error('Failed to open URL', e);
+    }
   },
 
   play: async () => {
@@ -441,8 +450,43 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     set({ tracks });
   },
 
-  takeScreenshot: async (path) => {
-    await invoke('take_screenshot', { path });
+  takeScreenshot: async (filename?: string) => {
+    try {
+      const savedPath = await invoke<string>('take_screenshot', {
+        filename: filename || null,
+      });
+      return savedPath;
+    } catch (e) {
+      console.error('Failed to take screenshot', e);
+      return null;
+    }
+  },
+
+  cycleAbLoop: async () => {
+    try {
+      const st = await invoke<PlaybackStatus>('cycle_ab_loop');
+      set({ status: st });
+    } catch (e) {
+      console.error('Failed to cycle AB loop', e);
+    }
+  },
+
+  clearAbLoop: async () => {
+    try {
+      const st = await invoke<PlaybackStatus>('clear_ab_loop');
+      set({ status: st });
+    } catch (e) {
+      console.error('Failed to clear AB loop', e);
+    }
+  },
+
+  openExternalUrl: async (url: string) => {
+    try {
+      await invoke('open_external_url', { url });
+    } catch (e) {
+      console.error('Failed to open external URL', e);
+      window.open(url, '_blank');
+    }
   },
 
   frameStep: async (forward) => {

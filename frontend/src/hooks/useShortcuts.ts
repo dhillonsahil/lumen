@@ -18,6 +18,8 @@ export const useShortcuts = () => {
     setActiveModal,
     isFullscreen,
     toggleFullscreen,
+    toggleMiniPlayer,
+    cycleAbLoop,
     openMedia,
     openFolder,
   } = usePlayerStore();
@@ -54,6 +56,9 @@ export const useShortcuts = () => {
         } else if (e.key === 'b' || e.key === 'B') {
           e.preventDefault();
           setActiveDrawer(activeDrawer === 'library' ? null : 'library');
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          toggleMiniPlayer();
         } else if (e.key === 'ArrowRight') {
           e.preventDefault();
           seekRelative(60);
@@ -73,7 +78,6 @@ export const useShortcuts = () => {
           break;
 
         case 'arrowright':
-        case 'l':
           e.preventDefault();
           seekRelative(5);
           break;
@@ -81,6 +85,13 @@ export const useShortcuts = () => {
         case 'arrowleft':
         case 'j':
           e.preventDefault();
+          seekRelative(-5);
+          break;
+
+        case 'l':
+          e.preventDefault();
+          cycleAbLoop();
+          break;
           seekRelative(-5);
           break;
 
@@ -164,6 +175,8 @@ export const useShortcuts = () => {
     setActiveModal,
     isFullscreen,
     toggleFullscreen,
+    toggleMiniPlayer,
+    cycleAbLoop,
     openMedia,
     openFolder,
   ]);

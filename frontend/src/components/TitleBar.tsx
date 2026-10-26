@@ -8,6 +8,7 @@ import {
   Cpu,
   Zap,
   X,
+  Heart,
 } from 'lucide-react';
 import { usePlayerStore } from '../stores/playerStore';
 import { pickMediaFiles, pickFolder } from '../utils/filePicker';
@@ -213,6 +214,19 @@ export const TitleBar: React.FC = () => {
           title="Settings"
         >
           <Settings size={15} />
+        </button>
+
+        <button
+          className={`glass-btn glass-btn-icon ${activeModal === 'sponsor' ? 'active' : ''}`}
+          style={{ width: '32px', height: '32px' }}
+          onClick={() => setActiveModal(activeModal === 'sponsor' ? null : 'sponsor')}
+          title="Sponsor Lumen (Support Development)"
+        >
+          <Heart
+            size={15}
+            color="#ec4899"
+            fill={activeModal === 'sponsor' ? '#ec4899' : 'rgba(236, 72, 153, 0.3)'}
+          />
         </button>
 
         {status.path && (

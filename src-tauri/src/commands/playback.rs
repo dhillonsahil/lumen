@@ -128,15 +128,21 @@ pub async fn open_folder(path: String, state: State<'_, AppState>) -> Result<Pla
 }
 
 #[tauri::command]
-pub async fn open_url(url: String, state: State<'_, AppState>) -> Result<(), LumenError> {
-    let source = MediaSource::Url(url.clone());
+pub async fn open_url(url: String, state: State<'_, AppState>) -> Result<Playlist, LumenError> {
+    save_current_resume(&state).await;
+
+    let clean = url.trim().to_string();
+    let source = MediaSource::from_path_or_url(&clean);
+
     let mut playlist = state.playlist.write().await;
     playlist.clear();
-    playlist.add(PlaylistItem::new(url, None, None));
+    playlist.add(PlaylistItem::new(clean, None, None));
+    let cloned_pl = playlist.clone();
+    drop(playlist);
 
     state.backend.load(&source).await?;
     state.backend.play().await?;
-    Ok(())
+    Ok(cloned_pl)
 }
 
 #[tauri::command]
@@ -256,9 +262,28 @@ pub async fn load_external_subtitle(
 }
 
 #[tauri::command]
-pub async fn take_screenshot(path: String, state: State<'_, AppState>) -> Result<(), LumenError> {
-    state.backend.screenshot(Path::new(&path)).await?;
-    Ok(())
+pub async fn take_screenshot(
+    filename: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<String, LumenError> {
+    let pic_dir = lumen_platform::get_pictures_dir();
+    if !pic_dir.exists() {
+        let _ = std::fs::create_dir_all(&pic_dir);
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let name = filename.unwrap_or_else(|| format!("Lumen_{}.png", now));
+    let full_path = if Path::new(&name).is_absolute() {
+        std::path::PathBuf::from(name)
+    } else {
+        pic_dir.join(name)
+    };
+    state.backend.screenshot(&full_path).await?;
+    let path_str = full_path.to_string_lossy().to_string();
+    info!("Screenshot saved: {}", path_str);
+    Ok(path_str)
 }
 
 #[tauri::command]
@@ -384,20 +409,82 @@ pub async fn toggle_mini_player(window: tauri::WebviewWindow) -> Result<bool, Lu
         .is_always_on_top()
         .map_err(|e| LumenError::Platform(e.to_string()))?;
     if !is_top {
-        let _ = window.set_always_on_top(true);
+        // 1. If currently in fullscreen, exit fullscreen first
+        if let Ok(true) = window.is_fullscreen() {
+            let _ = window.set_fullscreen(false);
+        }
+        // 2. If maximized, unmaximize first
+        if let Ok(true) = window.is_maximized() {
+            let _ = window.unmaximize();
+        }
+
+        // 3. Set compact PiP size (480x270)
         let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize {
             width: 480.0,
             height: 270.0,
         }));
+
+        // 4. Position window in the bottom-right corner of current monitor
+        if let Ok(Some(monitor)) = window.current_monitor() {
+            let screen_size = monitor.size();
+            let scale_factor = monitor.scale_factor();
+            let mon_pos = monitor.position();
+            let pip_w = (480.0 * scale_factor) as i32;
+            let pip_h = (270.0 * scale_factor) as i32;
+            let margin_x = (24.0 * scale_factor) as i32;
+            let margin_y = (60.0 * scale_factor) as i32; // clearance for taskbar
+            let target_x = mon_pos.x + (screen_size.width as i32) - pip_w - margin_x;
+            let target_y = mon_pos.y + (screen_size.height as i32) - pip_h - margin_y;
+            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+                x: target_x,
+                y: target_y,
+            }));
+        }
+
+        // 5. Pin always on top
+        let _ = window.set_always_on_top(true);
         info!("Activated mini player mode");
         Ok(true)
     } else {
+        // Exit mini player: unpin always on top, restore standard 1280x720 window, and center
         let _ = window.set_always_on_top(false);
         let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize {
             width: 1280.0,
             height: 720.0,
         }));
+        let _ = window.center();
         info!("Deactivated mini player mode");
         Ok(false)
     }
+}
+
+#[tauri::command]
+pub async fn cycle_ab_loop(state: State<'_, AppState>) -> Result<PlaybackStatus, LumenError> {
+    state.backend.cycle_ab_loop().await?;
+    Ok(state.backend.get_status().await)
+}
+
+#[tauri::command]
+pub async fn clear_ab_loop(state: State<'_, AppState>) -> Result<PlaybackStatus, LumenError> {
+    state.backend.clear_ab_loop().await?;
+    Ok(state.backend.get_status().await)
+}
+
+#[tauri::command]
+pub async fn open_external_url(url: String) -> Result<(), LumenError> {
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("cmd")
+            .args(["/c", "start", "", &url])
+            .spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open").arg(&url).spawn();
+    }
+    Ok(())
 }

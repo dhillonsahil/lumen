@@ -1,13 +1,31 @@
 import React, { useState } from 'react';
-import { X, Save, Sliders, Keyboard, FolderPlus, Trash2, Folder } from 'lucide-react';
+import {
+  X,
+  Save,
+  Sliders,
+  Keyboard,
+  FolderPlus,
+  Trash2,
+  Folder,
+  Heart,
+  Coffee,
+  ExternalLink,
+} from 'lucide-react';
 import { usePlayerStore } from '../stores/playerStore';
 import { AppSettings } from '../types';
 import { pickFolder } from '../utils/filePicker';
 
-export const SettingsModal: React.FC = () => {
-  const { settings, saveSettings, setActiveModal } = usePlayerStore();
+const GithubIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
 
-  const [currentTab, setCurrentTab] = useState<'general' | 'folders' | 'shortcuts'>('general');
+export const SettingsModal: React.FC = () => {
+  const { settings, saveSettings, setActiveModal, openExternalUrl } = usePlayerStore();
+
+  const [currentTab, setCurrentTab] = useState<'general' | 'folders' | 'shortcuts' | 'sponsor'>('general');
   const [form, setForm] = useState<AppSettings>(
     settings || {
       theme: 'dark',
@@ -160,6 +178,18 @@ export const SettingsModal: React.FC = () => {
           >
             <Keyboard size={14} />
             <span>Shortcuts</span>
+          </button>
+
+          <button
+            className={`glass-btn ${currentTab === 'sponsor' ? 'glass-btn-primary' : ''}`}
+            style={{
+              borderColor: currentTab === 'sponsor' ? '#ec4899' : undefined,
+              color: currentTab === 'sponsor' ? '#fff' : '#ec4899',
+            }}
+            onClick={() => setCurrentTab('sponsor')}
+          >
+            <Heart size={14} fill={currentTab === 'sponsor' ? '#fff' : 'rgba(236,72,153,0.3)'} />
+            <span>Sponsor</span>
           </button>
         </div>
 
@@ -407,6 +437,112 @@ export const SettingsModal: React.FC = () => {
                 </span>
               </div>
             ))}
+          </div>
+        )}
+
+        {currentTab === 'sponsor' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '10px',
+                background: 'rgba(236, 72, 153, 0.08)',
+                border: '1px solid rgba(236, 72, 153, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              <Heart size={28} color="#ec4899" fill="#ec4899" />
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+                  Support Lumen Development
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  Lumen v2 is free and open source. Your support directly funds development and
+                  performance enhancements.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div
+                className="glass-card"
+                style={{
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Coffee size={16} color="#ffdd00" />
+                  <span style={{ fontWeight: 600 }}>Buy Me a Coffee</span>
+                </div>
+                <button
+                  className="glass-btn glass-btn-primary"
+                  style={{ padding: '4px 10px', fontSize: '11px', gap: '4px' }}
+                  onClick={() => openExternalUrl('https://buymeacoffee.com/isahildhillon')}
+                >
+                  <span>Support</span>
+                  <ExternalLink size={11} />
+                </button>
+              </div>
+
+              <div
+                className="glass-card"
+                style={{
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Heart size={16} color="#ec4899" />
+                  <span style={{ fontWeight: 600 }}>GitHub Sponsors</span>
+                </div>
+                <button
+                  className="glass-btn glass-btn-primary"
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    gap: '4px',
+                    background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                  }}
+                  onClick={() => openExternalUrl('https://github.com/sponsors/dhillonsahil')}
+                >
+                  <span>Sponsor</span>
+                  <ExternalLink size={11} />
+                </button>
+              </div>
+
+              <div
+                className="glass-card"
+                style={{
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <GithubIcon size={16} color="#fff" />
+                  <span style={{ fontWeight: 600 }}>Star on GitHub</span>
+                </div>
+                <button
+                  className="glass-btn"
+                  style={{ padding: '4px 10px', fontSize: '11px', gap: '4px' }}
+                  onClick={() => openExternalUrl('https://github.com/dhillonsahil/lumen')}
+                >
+                  <span>Repository</span>
+                  <ExternalLink size={11} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

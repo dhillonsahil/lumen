@@ -154,6 +154,10 @@ impl MpvEventLoop {
                                     st.state = PlaybackState::Error;
                                     st.error_message = Some(err_msg.clone());
                                 }
+                                let current_status = backend.get_status_sync();
+                                let _ = tx.blocking_send(LumenPlaybackEvent::StateChanged(
+                                    current_status,
+                                ));
                                 if tx
                                     .blocking_send(LumenPlaybackEvent::Error(err_msg))
                                     .is_err()
@@ -342,6 +346,50 @@ impl MpvEventLoop {
                                     let spd = unsafe { *(prop.data as *const f64) };
                                     if let Ok(mut st) = status_lock.write() {
                                         st.speed = spd;
+                                    }
+                                    let current_status = backend.get_status_sync();
+                                    if tx
+                                        .blocking_send(LumenPlaybackEvent::StateChanged(
+                                            current_status,
+                                        ))
+                                        .is_err()
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                "ab-loop-a" => {
+                                    let loop_a = if prop.format == MpvFormat::Double
+                                        && !prop.data.is_null()
+                                    {
+                                        Some(unsafe { *(prop.data as *const f64) })
+                                    } else {
+                                        None
+                                    };
+                                    if let Ok(mut st) = status_lock.write() {
+                                        st.ab_loop_a = loop_a;
+                                    }
+                                    let current_status = backend.get_status_sync();
+                                    if tx
+                                        .blocking_send(LumenPlaybackEvent::StateChanged(
+                                            current_status,
+                                        ))
+                                        .is_err()
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                "ab-loop-b" => {
+                                    let loop_b = if prop.format == MpvFormat::Double
+                                        && !prop.data.is_null()
+                                    {
+                                        Some(unsafe { *(prop.data as *const f64) })
+                                    } else {
+                                        None
+                                    };
+                                    if let Ok(mut st) = status_lock.write() {
+                                        st.ab_loop_b = loop_b;
                                     }
                                     let current_status = backend.get_status_sync();
                                     if tx

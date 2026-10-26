@@ -24,6 +24,8 @@ export interface PlaybackStatus {
   cache_seconds: number;
   seeking: boolean;
   error_message: string | null;
+  ab_loop_a?: number | null;
+  ab_loop_b?: number | null;
 }
 
 export type TrackType = 'video' | 'audio' | 'subtitle';

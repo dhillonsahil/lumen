@@ -104,6 +104,8 @@ pub struct PlaybackStatus {
     pub cache_seconds: f64,
     pub seeking: bool,
     pub error_message: Option<String>,
+    pub ab_loop_a: Option<f64>,
+    pub ab_loop_b: Option<f64>,
 }
 
 impl Default for PlaybackStatus {
@@ -125,6 +127,8 @@ impl Default for PlaybackStatus {
             cache_seconds: 0.0,
             seeking: false,
             error_message: None,
+            ab_loop_a: None,
+            ab_loop_b: None,
         }
     }
 }

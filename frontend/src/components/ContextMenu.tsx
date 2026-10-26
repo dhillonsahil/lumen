@@ -9,6 +9,9 @@ import {
   Activity,
   Camera,
   FolderOpen,
+  Heart,
+  Tv,
+  Repeat,
 } from 'lucide-react';
 import { usePlayerStore } from '../stores/playerStore';
 
@@ -26,6 +29,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose }) => {
     setActiveModal,
     isFullscreen,
     setIsFullscreen,
+    toggleMiniPlayer,
+    cycleAbLoop,
   } = usePlayerStore();
 
   useEffect(() => {
@@ -81,6 +86,16 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose }) => {
       icon: <Activity size={14} />,
       action: () => setActiveModal('equalizer'),
     },
+    {
+      label: 'A-B Loop (L)',
+      icon: <Repeat size={14} />,
+      action: () => cycleAbLoop(),
+    },
+    {
+      label: 'Mini-Player (PiP)',
+      icon: <Tv size={14} />,
+      action: () => toggleMiniPlayer(),
+    },
     { type: 'separator' },
     {
       label: 'Take Screenshot',
@@ -91,6 +106,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose }) => {
       label: 'Settings...',
       icon: <FolderOpen size={14} />,
       action: () => setActiveModal('settings'),
+    },
+    {
+      label: 'Sponsor Lumen...',
+      icon: <Heart size={14} color="#ec4899" fill="rgba(236,72,153,0.3)" />,
+      action: () => setActiveModal('sponsor'),
     },
   ];
 

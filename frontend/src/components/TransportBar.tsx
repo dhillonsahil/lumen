@@ -18,6 +18,7 @@ import {
   Gauge,
   AlertTriangle,
   Tv,
+  Repeat,
 } from 'lucide-react';
 import { usePlayerStore } from '../stores/playerStore';
 
@@ -39,6 +40,7 @@ export const TransportBar: React.FC = () => {
     isFullscreen,
     toggleFullscreen,
     toggleMiniPlayer,
+    cycleAbLoop,
   } = usePlayerStore();
 
   const [isHoveringSeek, setIsHoveringSeek] = useState(false);
@@ -209,6 +211,70 @@ export const TransportBar: React.FC = () => {
             pointerEvents: 'none',
           }}
         />
+
+        {/* A-B Loop highlight and markers */}
+        {status.duration > 0 &&
+          status.ab_loop_a !== null &&
+          status.ab_loop_a !== undefined && (
+            <>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: `${(status.ab_loop_a / status.duration) * 100}%`,
+                  width:
+                    status.ab_loop_b !== null && status.ab_loop_b !== undefined
+                      ? `${Math.max(
+                          0.5,
+                          ((status.ab_loop_b - status.ab_loop_a) / status.duration) * 100
+                        )}%`
+                      : '3px',
+                  background:
+                    status.ab_loop_b !== null && status.ab_loop_b !== undefined
+                      ? 'rgba(236, 72, 153, 0.45)'
+                      : '#ec4899',
+                  borderRadius: '2px',
+                  pointerEvents: 'none',
+                  zIndex: 2,
+                }}
+              />
+              <div
+                title={`Loop A: ${formatTime(status.ab_loop_a)}`}
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  left: `${(status.ab_loop_a / status.duration) * 100}%`,
+                  transform: 'translateX(-50%)',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#ec4899',
+                  border: '1px solid #fff',
+                  zIndex: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+              {status.ab_loop_b !== null && status.ab_loop_b !== undefined && (
+                <div
+                  title={`Loop B: ${formatTime(status.ab_loop_b)}`}
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    left: `${(status.ab_loop_b / status.duration) * 100}%`,
+                    transform: 'translateX(-50%)',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#ec4899',
+                    border: '1px solid #fff',
+                    zIndex: 4,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+            </>
+          )}
 
         {/* Playhead thumb when hovering or dragging */}
         {(isHoveringSeek || isDraggingSeek) && (
@@ -488,11 +554,38 @@ export const TransportBar: React.FC = () => {
             <LibraryIcon size={16} />
           </button>
 
+          {/* A-B Loop */}
+          <button
+            className={`glass-btn glass-btn-icon ${
+              status.ab_loop_a !== null && status.ab_loop_a !== undefined ? 'active' : ''
+            }`}
+            style={{
+              borderColor:
+                status.ab_loop_a !== null && status.ab_loop_a !== undefined
+                  ? '#ec4899'
+                  : undefined,
+              color:
+                status.ab_loop_a !== null && status.ab_loop_a !== undefined
+                  ? '#ec4899'
+                  : undefined,
+            }}
+            onClick={cycleAbLoop}
+            title={
+              status.ab_loop_a !== null && status.ab_loop_a !== undefined
+                ? status.ab_loop_b !== null && status.ab_loop_b !== undefined
+                  ? `Looping A-B (${formatTime(status.ab_loop_a)} - ${formatTime(status.ab_loop_b)}). Click to clear.`
+                  : `Loop Point A set at ${formatTime(status.ab_loop_a)}. Click to set Point B.`
+                : 'A-B Loop: Set Point A (L)'
+            }
+          >
+            <Repeat size={16} />
+          </button>
+
           {/* Mini-Player / PiP */}
           <button
             className="glass-btn glass-btn-icon"
             onClick={toggleMiniPlayer}
-            title="Toggle Mini-Player / Always on Top"
+            title="Toggle Mini-Player / Always on Top (P)"
           >
             <Tv size={16} />
           </button>
