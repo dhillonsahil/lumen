@@ -192,18 +192,42 @@ impl LibMpvApi {
 fn get_dll_candidates() -> Vec<PathBuf> {
     let mut candidates = Vec::new();
 
-    // 1. Current executable directory and parent directories (e.g. target/debug/deps -> target/debug -> root)
+    // 1. Current executable directory and parent directories (up to 5 levels)
     if let Ok(exe_path) = std::env::current_exe() {
         let mut curr = exe_path.parent();
         for _ in 0..5 {
             if let Some(p) = curr {
-                candidates.push(p.join("libmpv-2.dll"));
-                candidates.push(p.join("mpv-2.dll"));
-                candidates.push(p.join("libmpv.dll"));
-                candidates.push(p.join("resources").join("libmpv-2.dll"));
-                candidates.push(p.join("resources").join("mpv-2.dll"));
-                candidates.push(p.join("resources").join("libmpv.dll"));
-                candidates.push(p.join("packaging/windows/libmpv/libmpv-2.dll"));
+                #[cfg(target_os = "windows")]
+                {
+                    candidates.push(p.join("libmpv-2.dll"));
+                    candidates.push(p.join("mpv-2.dll"));
+                    candidates.push(p.join("libmpv.dll"));
+                    candidates.push(p.join("resources").join("libmpv-2.dll"));
+                    candidates.push(p.join("resources").join("mpv-2.dll"));
+                    candidates.push(p.join("resources").join("libmpv.dll"));
+                    candidates.push(p.join("packaging/windows/libmpv/libmpv-2.dll"));
+                }
+                #[cfg(target_os = "linux")]
+                {
+                    candidates.push(p.join("libmpv.so.2"));
+                    candidates.push(p.join("libmpv.so.1"));
+                    candidates.push(p.join("libmpv.so"));
+                    candidates.push(p.join("lib").join("libmpv.so.2"));
+                    candidates.push(p.join("lib").join("x86_64-linux-gnu").join("libmpv.so.2"));
+                    candidates.push(p.join("resources").join("libmpv.so.2"));
+                    candidates.push(p.join("resources").join("libmpv.so"));
+                    candidates.push(p.join("../lib").join("libmpv.so.2"));
+                    candidates.push(p.join("../lib").join("x86_64-linux-gnu").join("libmpv.so.2"));
+                    candidates.push(p.join("../lib64").join("libmpv.so.2"));
+                }
+                #[cfg(target_os = "macos")]
+                {
+                    candidates.push(p.join("libmpv.2.dylib"));
+                    candidates.push(p.join("libmpv.dylib"));
+                    candidates.push(p.join("../Frameworks").join("libmpv.2.dylib"));
+                    candidates.push(p.join("../Frameworks").join("libmpv.dylib"));
+                    candidates.push(p.join("resources").join("libmpv.2.dylib"));
+                }
                 curr = p.parent();
             } else {
                 break;
@@ -216,15 +240,26 @@ fn get_dll_candidates() -> Vec<PathBuf> {
         let mut curr = Some(cwd.as_path());
         for _ in 0..5 {
             if let Some(p) = curr {
-                candidates.push(p.join("libmpv-2.dll"));
-                candidates.push(p.join("mpv-2.dll"));
-                candidates.push(p.join("libmpv.dll"));
-                candidates.push(p.join("resources").join("libmpv-2.dll"));
-                candidates.push(p.join("resources").join("mpv-2.dll"));
-                candidates.push(p.join("resources").join("libmpv.dll"));
-                candidates.push(p.join("packaging/windows/libmpv/libmpv-2.dll"));
-                candidates.push(p.join("target/debug/libmpv-2.dll"));
-                candidates.push(p.join("target/release/libmpv-2.dll"));
+                #[cfg(target_os = "windows")]
+                {
+                    candidates.push(p.join("libmpv-2.dll"));
+                    candidates.push(p.join("mpv-2.dll"));
+                    candidates.push(p.join("libmpv.dll"));
+                    candidates.push(p.join("resources").join("libmpv-2.dll"));
+                    candidates.push(p.join("resources").join("mpv-2.dll"));
+                    candidates.push(p.join("resources").join("libmpv.dll"));
+                    candidates.push(p.join("packaging/windows/libmpv/libmpv-2.dll"));
+                    candidates.push(p.join("target/debug/libmpv-2.dll"));
+                    candidates.push(p.join("target/release/libmpv-2.dll"));
+                }
+                #[cfg(target_os = "linux")]
+                {
+                    candidates.push(p.join("libmpv.so.2"));
+                    candidates.push(p.join("libmpv.so.1"));
+                    candidates.push(p.join("libmpv.so"));
+                    candidates.push(p.join("target/debug/libmpv.so.2"));
+                    candidates.push(p.join("target/release/libmpv.so.2"));
+                }
                 curr = p.parent();
             } else {
                 break;
@@ -232,7 +267,20 @@ fn get_dll_candidates() -> Vec<PathBuf> {
         }
     }
 
-    // 3. Fallbacks on PATH / system loaders
+    // 3. AppImage APPDIR environment check
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(appdir) = std::env::var("APPDIR") {
+            let base = PathBuf::from(appdir);
+            candidates.push(base.join("usr/lib/libmpv.so.2"));
+            candidates.push(base.join("usr/lib/x86_64-linux-gnu/libmpv.so.2"));
+            candidates.push(base.join("usr/lib/libmpv.so.1"));
+            candidates.push(base.join("usr/lib/libmpv.so"));
+            candidates.push(base.join("usr/lib64/libmpv.so.2"));
+        }
+    }
+
+    // 4. Fallbacks on PATH / system loaders
     #[cfg(target_os = "windows")]
     {
         candidates.push(PathBuf::from("libmpv-2.dll"));
@@ -242,6 +290,11 @@ fn get_dll_candidates() -> Vec<PathBuf> {
 
     #[cfg(target_os = "linux")]
     {
+        candidates.push(PathBuf::from("/usr/lib/x86_64-linux-gnu/libmpv.so.2"));
+        candidates.push(PathBuf::from("/usr/lib64/libmpv.so.2"));
+        candidates.push(PathBuf::from("/usr/lib/libmpv.so.2"));
+        candidates.push(PathBuf::from("/usr/local/lib/libmpv.so.2"));
+        candidates.push(PathBuf::from("/app/lib/libmpv.so.2")); // Flatpak runtime
         candidates.push(PathBuf::from("libmpv.so.2"));
         candidates.push(PathBuf::from("libmpv.so.1"));
         candidates.push(PathBuf::from("libmpv.so"));
@@ -249,10 +302,10 @@ fn get_dll_candidates() -> Vec<PathBuf> {
 
     #[cfg(target_os = "macos")]
     {
-        candidates.push(PathBuf::from("libmpv.2.dylib"));
-        candidates.push(PathBuf::from("libmpv.dylib"));
         candidates.push(PathBuf::from("/opt/homebrew/lib/libmpv.dylib"));
         candidates.push(PathBuf::from("/usr/local/lib/libmpv.dylib"));
+        candidates.push(PathBuf::from("libmpv.2.dylib"));
+        candidates.push(PathBuf::from("libmpv.dylib"));
     }
 
     candidates

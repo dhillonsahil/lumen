@@ -68,7 +68,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             rpm \
-            libfuse2
+            libfuse2 \
+            patchelf
 
       - name: Install macOS system dependencies
         if: matrix.platform == 'macos-latest'
@@ -109,6 +110,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Lumen Media Player ${{ github.ref_name }}'
@@ -150,3 +152,46 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.ref_name }} "dist/Lumen-Media-Player-windows-portable.zip" --clobber
+
+      - name: Create Linux Portable Package
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          mkdir -p dist/Lumen-Media-Player-linux-portable/lib
+          BIN_PATH="target/release/lumen-app"
+          [ -f "src-tauri/target/release/lumen-app" ] && BIN_PATH="src-tauri/target/release/lumen-app"
+          cp -f "$BIN_PATH" dist/Lumen-Media-Player-linux-portable/lumen-app
+          
+          # Copy libmpv and dependencies into portable lib/
+          cp -d /usr/lib/x86_64-linux-gnu/libmpv.so* dist/Lumen-Media-Player-linux-portable/lib/ 2>/dev/null || true
+          
+          # Create launcher script
+          cat << 'EOF' > dist/Lumen-Media-Player-linux-portable/run.sh
+          #!/usr/bin/env bash
+          DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export LD_LIBRARY_PATH="$DIR/lib:$DIR:$LD_LIBRARY_PATH"
+          export GDK_BACKEND=x11
+          exec "$DIR/lumen-app" "$@"
+          EOF
+          chmod +x dist/Lumen-Media-Player-linux-portable/run.sh dist/Lumen-Media-Player-linux-portable/lumen-app
+          
+          if [ -f "src-tauri/icons/128x128.png" ]; then
+            cp -f "src-tauri/icons/128x128.png" dist/Lumen-Media-Player-linux-portable/icon.png
+          fi
+          
+          cat << 'EOF' > dist/Lumen-Media-Player-linux-portable/README.txt
+          Lumen Media Player - Linux Portable Edition
+          ============================================
+          Native desktop media player powered by libmpv.
+          No installation required.
+          To launch, execute:
+            ./run.sh [optional_file_path]
+          EOF
+          
+          tar -czf dist/Lumen-Media-Player-linux-portable.tar.gz -C dist Lumen-Media-Player-linux-portable
+
+      - name: Upload Linux Portable Artifact to Release
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} "dist/Lumen-Media-Player-linux-portable.tar.gz" --clobber

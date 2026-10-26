@@ -1,6 +1,6 @@
 [package]
 name = "lumen-app"
-version = "2.0.3"
+version = "2.0.4"
 description = "Lumen v2 Native Desktop Media Player"
 authors = ["Lumen Team"]
 edition = "2021"

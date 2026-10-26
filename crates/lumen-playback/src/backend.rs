@@ -123,6 +123,21 @@ impl MpvBackend {
                 let _ = mpv.set_option_string("vo", "gpu-next");
                 let _ = mpv.set_option_string("gpu-context", "d3d11");
             }
+            #[cfg(target_os = "linux")]
+            {
+                // On Linux X11/XWayland, use gpu with x11egl/x11 context, falling back to x11
+                let _ = mpv.set_option_string("vo", "gpu,x11");
+                let _ = mpv.set_option_string("gpu-context", "x11egl,x11,auto");
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let _ = mpv.set_option_string("vo", "libmpv,gpu-next,gpu");
+                let _ = mpv.set_option_string("gpu-context", "macvk,auto");
+            }
+        } else {
+            // Under NO circumstance should mpv spawn an unattached floating desktop window!
+            info!("No native window ID provided - disabling detached video output");
+            let _ = mpv.set_option_string("vo", "null");
         }
 
         mpv.initialize()?;

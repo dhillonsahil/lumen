@@ -16,6 +16,13 @@ use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    {
+        // Force X11/XWayland backend so libmpv can embed using X11 Window ID (wid).
+        // Wayland does not support foreign subwindow reparenting via wid.
+        std::env::set_var("GDK_BACKEND", "x11");
+    }
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -56,6 +63,9 @@ pub fn run() {
                 .get_webview_window("main")
                 .expect("Failed to get main window");
 
+            // Ensure window is shown/realized so the underlying native window handle is valid
+            let _ = window.show();
+
             // Extract native window ID for libmpv embedding
             let mut window_id: Option<i64> = None;
             if let Ok(wh) = window.window_handle() {
@@ -70,10 +80,22 @@ pub fn run() {
                         window_id = Some(h.window as i64);
                         info!("Acquired X11 Window ID for mpv: {:?}", window_id);
                     }
-                    _ => {
-                        info!("Platform window handle not attached to wid");
+                    #[cfg(target_os = "linux")]
+                    RawWindowHandle::Xcb(h) => {
+                        window_id = Some(h.window.get() as i64);
+                        info!("Acquired XCB Window ID for mpv: {:?}", window_id);
+                    }
+                    #[cfg(target_os = "macos")]
+                    RawWindowHandle::AppKit(h) => {
+                        window_id = Some(h.ns_view.as_ptr() as i64);
+                        info!("Acquired macOS NSView pointer for mpv: {:?}", window_id);
+                    }
+                    other => {
+                        tracing::warn!("Platform window handle not attached to wid: {:?}", other);
                     }
                 }
+            } else {
+                tracing::warn!("Failed to retrieve window handle from main window");
             }
 
             // Load settings

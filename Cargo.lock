@@ -2098,7 +2098,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "lumen-app"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "lumen-core",
  "lumen-library",
@@ -2122,7 +2122,7 @@ dependencies = [
 
 [[package]]
 name = "lumen-core"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "chrono",
  "serde",
@@ -2134,7 +2134,7 @@ dependencies = [
 
 [[package]]
 name = "lumen-library"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "chrono",
  "lumen-core",
@@ -2149,7 +2149,7 @@ dependencies = [
 
 [[package]]
 name = "lumen-platform"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "cfg-if",
  "dirs 5.0.1",
@@ -2162,7 +2162,7 @@ dependencies = [
 
 [[package]]
 name = "lumen-playback"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "async-trait",
  "libloading 0.8.9",
