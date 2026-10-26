@@ -199,6 +199,10 @@ fn get_dll_candidates() -> Vec<PathBuf> {
             if let Some(p) = curr {
                 candidates.push(p.join("libmpv-2.dll"));
                 candidates.push(p.join("mpv-2.dll"));
+                candidates.push(p.join("libmpv.dll"));
+                candidates.push(p.join("resources").join("libmpv-2.dll"));
+                candidates.push(p.join("resources").join("mpv-2.dll"));
+                candidates.push(p.join("resources").join("libmpv.dll"));
                 candidates.push(p.join("packaging/windows/libmpv/libmpv-2.dll"));
                 curr = p.parent();
             } else {
@@ -214,6 +218,10 @@ fn get_dll_candidates() -> Vec<PathBuf> {
             if let Some(p) = curr {
                 candidates.push(p.join("libmpv-2.dll"));
                 candidates.push(p.join("mpv-2.dll"));
+                candidates.push(p.join("libmpv.dll"));
+                candidates.push(p.join("resources").join("libmpv-2.dll"));
+                candidates.push(p.join("resources").join("mpv-2.dll"));
+                candidates.push(p.join("resources").join("libmpv.dll"));
                 candidates.push(p.join("packaging/windows/libmpv/libmpv-2.dll"));
                 candidates.push(p.join("target/debug/libmpv-2.dll"));
                 candidates.push(p.join("target/release/libmpv-2.dll"));

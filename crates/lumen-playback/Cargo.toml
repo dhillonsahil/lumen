@@ -1,6 +1,6 @@
 [package]
 name = "lumen-playback"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 authors = ["Lumen Team"]
 description = "Playback engine and libmpv backend for Lumen v2"

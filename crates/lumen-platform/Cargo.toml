@@ -1,6 +1,6 @@
 [package]
 name = "lumen-platform"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 authors = ["Lumen Team"]
 description = "Platform-specific integration, window helpers, and OS quirks for Lumen v2"

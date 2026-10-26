@@ -45,7 +45,7 @@ jobs:
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: '. -> target'
 
       - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -63,7 +63,10 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            rpm
+            rpm \
+            libfuse2 \
+            squashfs-tools \
+            patchelf
 
       - name: Install macOS system dependencies
         if: matrix.platform == 'macos-latest'
@@ -84,19 +87,21 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          # Copy libmpv-2.dll to target directories if exists in repo or download
-          if (Test-Path "target\debug\libmpv-2.dll") {
-            New-Item -ItemType Directory -Force -Path "target\release"
-            Copy-Item -Force "target\debug\libmpv-2.dll" "target\release\libmpv-2.dll"
-            Copy-Item -Force "target\debug\libmpv-2.dll" "src-tauri\libmpv-2.dll"
-          } else {
-            Write-Host "Downloading libmpv for Windows build..."
-            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/mpv-player-windows/libmpv/mpv-dev-x86_64-20240407-git-8fbc3c3.7z" -OutFile "mpv-dev.7z"
-            7z x mpv-dev.7z -o"mpv-dev"
-            New-Item -ItemType Directory -Force -Path "target\release"
-            Copy-Item -Force "mpv-dev\libmpv-2.dll" "target\release\libmpv-2.dll"
-            Copy-Item -Force "mpv-dev\libmpv-2.dll" "src-tauri\libmpv-2.dll"
+          Write-Host "Downloading libmpv for Windows build..."
+          try {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/zhongfly/mpv-winbuild/releases/latest"
+            $asset = $release.assets | Where-Object { $_.name -like "mpv-dev-x86_64-*.7z" -and $_.name -notlike "*v3*" } | Select-Object -First 1
+            $downloadUrl = $asset.browser_download_url
+          } catch {
+            $downloadUrl = "https://github.com/zhongfly/mpv-winbuild/releases/download/2026-10-26-baa3e11d42/mpv-dev-x86_64-20261026-git-baa3e11d42.7z"
           }
+          Write-Host "Using download URL: $downloadUrl"
+          curl.exe -L $downloadUrl -o mpv-dev.7z
+          tar.exe -xf mpv-dev.7z
+          New-Item -ItemType Directory -Force -Path "target\release", "src-tauri", "packaging\windows\libmpv"
+          Copy-Item -Force "libmpv-2.dll" "target\release\libmpv-2.dll"
+          Copy-Item -Force "libmpv-2.dll" "src-tauri\libmpv-2.dll"
+          Copy-Item -Force "libmpv-2.dll" "packaging\windows\libmpv\libmpv-2.dll"
 
       - name: Build Tauri Application
         uses: tauri-apps/tauri-action@v0
@@ -105,21 +110,6 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Lumen Media Player ${{ github.ref_name }}'
-          releaseBody: |
-            ## Lumen Media Player Release ${{ github.ref_name }}
-
-            ### Highlights
-            - **Native libmpv Engine**: Full hardware-accelerated video decoding (Direct3D11, VAAPI, VideoToolbox).
-            - **No Media Home State**: Dark responsive home state with quick file open, URL streams, and recent history.
-            - **Comprehensive Formats**: Support for MKV, MP4, AVI, MOV, WEBM, FLV, TS, HLS (.m3u8), DASH (.mpd), and IPTV (.m3u).
-            - **Unified Controls**: Integrated Video & Color tuning, 10-band Equalizer, and Diagnostics in Settings.
-            - **Keyboard Shortcuts**: Aspect ratio cycling (<kbd>A</kbd>), audio/subtitle track selectors, A/B looping, and screenshot capture.
-            - **Default Player Support**: Windows Default Apps and file association integration.
-
-            ### Downloads by Platform:
-            - **Windows**: `.msi` (Installer), `.exe` (NSIS Setup), and `.zip` (Portable standalone)
-            - **Linux**: `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL), `.AppImage` (Universal Linux)
-            - **macOS**: `.dmg` (Universal Disk Image)
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
@@ -130,9 +120,15 @@ jobs:
         run: |
           $PortableDir = "dist\Lumen-Media-Player-windows-portable"
           New-Item -ItemType Directory -Force -Path $PortableDir
-          Copy-Item -Force "src-tauri\target\release\lumen-app.exe" "$PortableDir\Lumen-Media-Player.exe"
+          if (Test-Path "target\release\lumen-app.exe") {
+            Copy-Item -Force "target\release\lumen-app.exe" "$PortableDir\Lumen-Media-Player.exe"
+          } elseif (Test-Path "src-tauri\target\release\lumen-app.exe") {
+            Copy-Item -Force "src-tauri\target\release\lumen-app.exe" "$PortableDir\Lumen-Media-Player.exe"
+          }
           if (Test-Path "target\release\libmpv-2.dll") {
             Copy-Item -Force "target\release\libmpv-2.dll" "$PortableDir\libmpv-2.dll"
+          } elseif (Test-Path "libmpv-2.dll") {
+            Copy-Item -Force "libmpv-2.dll" "$PortableDir\libmpv-2.dll"
           }
           if (Test-Path "src-tauri\icons\icon.ico") {
             Copy-Item -Force "src-tauri\icons\icon.ico" "$PortableDir\icon.ico"

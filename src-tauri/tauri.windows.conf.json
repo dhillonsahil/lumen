@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": [
+      "libmpv-2.dll"
+    ]
+  }
+}

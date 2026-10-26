@@ -32,6 +32,10 @@ pnpm-debug.log*
 *.lib
 *.exp
 *.ilk
+*.a
+*.7z
+mpv-dev.7z
+include/
 libmpv-2.dll
 
 # Preserve headers and packaging definitions, but exclude binary blobs
