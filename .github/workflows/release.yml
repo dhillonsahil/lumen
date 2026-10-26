@@ -51,11 +51,13 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         env:
           DEBIAN_FRONTEND: noninteractive
+          NEEDRESTART_MODE: a
         run: |
-          sudo mkdir -p /etc/needrestart/conf.d
-          echo '$nrconf{restart} = "a";' | sudo tee /etc/needrestart/conf.d/50local.conf || true
+          sudo apt-get purge -y needrestart || true
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y --no-install-recommends \
+            -o DPkg::Options::="--force-confnew" \
+            -o DPkg::Options::="--force-confdef" \
             libmpv-dev \
             libasound2-dev \
             libwebkit2gtk-4.1-dev \
