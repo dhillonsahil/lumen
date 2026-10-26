@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Shuffle,
@@ -12,6 +12,7 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
+  GripVertical,
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { usePlayerStore } from '../stores/playerStore';
@@ -38,7 +39,39 @@ export const PlaylistDrawer: React.FC = () => {
     }
   }, [activeDrawer, fetchPlaylist]);
 
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   if (activeDrawer !== 'playlist') return null;
+
+  const handleItemDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleItemDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleItemDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+      await reorderPlaylistItem(draggedIndex, targetIndex);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleItemDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   const handleAddFiles = async () => {
     try {
@@ -253,18 +286,31 @@ export const PlaylistDrawer: React.FC = () => {
         ) : (
           playlist.items.map((item, idx) => {
             const isCurrent = playlist.current_index === idx;
+            const isDragging = draggedIndex === idx;
+            const isOverAbove = dragOverIndex === idx && draggedIndex !== null && draggedIndex > idx;
+            const isOverBelow = dragOverIndex === idx && draggedIndex !== null && draggedIndex < idx;
+
             return (
               <div
                 key={item.id}
+                draggable
+                onDragStart={(e) => handleItemDragStart(e, idx)}
+                onDragOver={(e) => handleItemDragOver(e, idx)}
+                onDragEnd={handleItemDragEnd}
+                onDrop={(e) => handleItemDrop(e, idx)}
                 className="glass-card"
                 style={{
                   padding: '10px 12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  cursor: 'pointer',
+                  cursor: 'grab',
+                  opacity: isDragging ? 0.35 : 1,
+                  borderTop: isOverAbove ? '2px solid var(--accent)' : undefined,
+                  borderBottom: isOverBelow ? '2px solid var(--accent)' : undefined,
                   borderColor: isCurrent ? 'var(--accent)' : 'var(--glass-border-subtle)',
                   background: isCurrent ? 'rgba(99, 102, 241, 0.22)' : undefined,
+                  transition: 'opacity 0.15s ease, border-color 0.15s ease',
                 }}
                 onClick={() => playPlaylistItem(idx)}
               >
@@ -272,17 +318,31 @@ export const PlaylistDrawer: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
+                    gap: '8px',
                     minWidth: 0,
                     flex: 1,
                   }}
                 >
+                  {/* Drag Handle Grip */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: 'var(--text-muted)',
+                      cursor: 'grab',
+                      padding: '2px',
+                    }}
+                    title="Drag to reorder"
+                  >
+                    <GripVertical size={13} />
+                  </div>
+
                   <span
                     style={{
                       fontSize: '11px',
                       fontWeight: 600,
                       color: isCurrent ? 'var(--accent-light)' : 'var(--text-muted)',
-                      width: '20px',
+                      width: '18px',
                     }}
                   >
                     {idx + 1}

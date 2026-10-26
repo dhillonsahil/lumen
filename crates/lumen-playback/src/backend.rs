@@ -336,6 +336,8 @@ impl MediaBackend for MpvBackend {
         st.title = None;
         st.position = 0.0;
         st.duration = 0.0;
+        st.video_width = None;
+        st.video_height = None;
         Ok(())
     }
 

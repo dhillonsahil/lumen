@@ -128,6 +128,24 @@ impl MpvEventLoop {
                                 if tx.blocking_send(LumenPlaybackEvent::Ended).is_err() {
                                     break;
                                 }
+                            } else if end_data.reason == 2 {
+                                // Explicit stop requested
+                                if let Ok(mut st) = status_lock.write() {
+                                    st.state = PlaybackState::Stopped;
+                                    st.path = None;
+                                    st.title = None;
+                                    st.position = 0.0;
+                                    st.duration = 0.0;
+                                    st.video_width = None;
+                                    st.video_height = None;
+                                }
+                                let current_status = backend.get_status_sync();
+                                if tx
+                                    .blocking_send(LumenPlaybackEvent::StateChanged(current_status))
+                                    .is_err()
+                                {
+                                    break;
+                                }
                             } else if end_data.reason == 4 {
                                 // Error occurred during playback
                                 let err_msg = mpv.error_string(end_data.error);

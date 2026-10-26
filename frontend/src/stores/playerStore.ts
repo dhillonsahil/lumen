@@ -81,6 +81,7 @@ interface PlayerStore {
   setRepeat: (mode: RepeatMode) => Promise<void>;
   nextTrack: () => Promise<void>;
   prevTrack: () => Promise<void>;
+  importPlaylist: (path: string) => Promise<void>;
 
   // Library & History
   fetchHistory: () => Promise<void>;
@@ -372,13 +373,18 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         title: null,
         position: 0,
         duration: 0,
+        video_width: null,
+        video_height: null,
       },
       playlist: {
         ...s.playlist,
         items: [],
         current_index: null,
       },
+      tracks: [],
+      chapters: [],
     }));
+    get().fetchHistory();
   },
 
   seek: async (seconds) => {
@@ -496,18 +502,24 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   clearPlaylist: async () => {
-    const pl = await invoke<Playlist>('clear_playlist');
-    set({
-      playlist: pl,
-      status: {
-        ...get().status,
-        state: 'stopped',
-        path: null,
-        title: null,
-        position: 0,
-        duration: 0,
-      },
-    });
+    try {
+      await invoke('clear_playlist');
+    } catch (e) {
+      console.warn('Failed to clear playlist', e);
+    }
+    await get().stopMedia();
+  },
+
+  importPlaylist: async (path) => {
+    try {
+      const pl = await invoke<Playlist>('import_playlist', { path });
+      set({ playlist: pl });
+      if (pl.items.length > 0) {
+        await get().playPlaylistItem(0);
+      }
+    } catch (e) {
+      console.error('Failed to import playlist', e);
+    }
   },
 
   setShuffle: async (shuffle) => {

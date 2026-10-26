@@ -38,8 +38,11 @@ export const App: React.FC = () => {
     setControlsVisible,
     activeModal,
     setActiveModal,
+    activeDrawer,
     openMedia,
     openFolder,
+    addToPlaylist,
+    importPlaylist,
     togglePlay,
     toggleFullscreen,
     setVolume,
@@ -57,11 +60,9 @@ export const App: React.FC = () => {
   const hudTimerRef = useRef<number | null>(null);
 
   const hasMedia =
-    status.state === 'playing' ||
-    status.state === 'paused' ||
-    status.state === 'loading' ||
-    status.duration > 0 ||
-    (status.state !== 'idle' && status.state !== 'stopped' && !!status.path);
+    Boolean(status.path) &&
+    status.state !== 'idle' &&
+    status.state !== 'stopped';
 
   // Synchronize documentElement & body class whenever hasMedia changes
   useEffect(() => {
@@ -88,16 +89,36 @@ export const App: React.FC = () => {
     let unlistenWebviewDragDrop: (() => void) | null = null;
     let unlistenTauriEvent: (() => void) | null = null;
 
+    const handleDroppedFiles = async (paths: string[]) => {
+      if (!paths || paths.length === 0) return;
+      setIsDraggingOver(false);
+
+      const first = paths[0].toLowerCase();
+      if (
+        first.endsWith('.m3u') ||
+        first.endsWith('.m3u8') ||
+        first.endsWith('.pls') ||
+        first.endsWith('.xspf')
+      ) {
+        showHud('Importing playlist...', 'forward');
+        await importPlaylist(paths[0]);
+        return;
+      }
+
+      if (activeDrawer === 'playlist') {
+        await addToPlaylist(paths);
+        showHud(`Added ${paths.length} file(s) to queue`, 'forward');
+      } else {
+        await openMedia(paths);
+      }
+    };
+
     // 1. WebviewWindow native drag-drop API
     try {
       const win = getCurrentWebviewWindow();
       win.onDragDropEvent((event) => {
         if (event.payload.type === 'drop') {
-          const paths = event.payload.paths;
-          if (paths && paths.length > 0) {
-            openMedia(paths);
-          }
-          setIsDraggingOver(false);
+          handleDroppedFiles(event.payload.paths);
         } else if (event.payload.type === 'enter') {
           setIsDraggingOver(true);
         } else if (event.payload.type === 'leave') {
@@ -115,11 +136,9 @@ export const App: React.FC = () => {
       const payload = event.payload;
       if (!payload) return;
       if (payload.type === 'drop' && Array.isArray(payload.paths) && payload.paths.length > 0) {
-        openMedia(payload.paths);
-        setIsDraggingOver(false);
+        handleDroppedFiles(payload.paths);
       } else if (Array.isArray(payload.paths) && payload.paths.length > 0) {
-        openMedia(payload.paths);
-        setIsDraggingOver(false);
+        handleDroppedFiles(payload.paths);
       }
     }).then((unlisten) => {
       unlistenTauriEvent = unlisten;
@@ -130,7 +149,7 @@ export const App: React.FC = () => {
       if (unlistenTauriEvent) unlistenTauriEvent();
       if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     };
-  }, [init, openMedia]);
+  }, [init, openMedia, addToPlaylist, importPlaylist, activeDrawer]);
 
   // Auto-hide controls during playback
   const handleUserActivity = () => {
@@ -421,7 +440,7 @@ export const App: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {history.slice(0, 3).map((item, idx) => (
+                  {history.slice(0, 5).map((item, idx) => (
                     <div
                       key={idx}
                       className="glass-card"

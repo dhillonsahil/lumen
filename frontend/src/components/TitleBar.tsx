@@ -140,7 +140,7 @@ export const TitleBar: React.FC = () => {
         )}
 
         {/* Video resolution pill */}
-        {status.video_width && status.video_height && (
+        {status.path && status.video_width && status.video_height && (
           <div
             style={{
               padding: '2px 8px',
